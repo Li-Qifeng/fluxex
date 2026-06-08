@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import '../models/topic_list_result.dart';
 import '../providers/topic_list_provider.dart';
 import '../widgets/topic_card.dart';
 import '../widgets/scroll_bottom_detector.dart';
@@ -13,25 +14,71 @@ class HomeScreen extends ConsumerWidget {
     final hotAsync = ref.watch(hotTopicsProvider);
     final latestAsync = ref.watch(latestTopicsProvider);
 
-    Widget buildList(AsyncValue<List<dynamic>> asyncValue, VoidCallback onRefresh) {
+    Widget buildList(AsyncValue<TopicListResult> asyncValue, VoidCallback onRefresh) {
       return asyncValue.when(
-        data: (topics) => ListView.builder(
-          itemCount: topics.length + 1,
-          itemBuilder: (context, index) {
-            if (index == topics.length) {
-              return const Padding(
-                padding: EdgeInsets.symmetric(vertical: 24),
-                child: Center(
-                  child: Text(
-                    '—— 已显示全部内容 ——',
-                    style: TextStyle(color: Colors.grey, fontSize: 12),
+        data: (result) {
+          if (result.topics.isEmpty) {
+            return Center(
+              child: Column(
+                mainAxisAlignment: MainAxisAlignment.center,
+                children: [
+                  Icon(Icons.inbox_outlined, size: 48, color: Theme.of(context).colorScheme.outline),
+                  const SizedBox(height: 12),
+                  const Text('暂无内容'),
+                  const SizedBox(height: 12),
+                  FilledButton(
+                    onPressed: onRefresh,
+                    child: const Text('刷新'),
                   ),
-                ),
-              );
-            }
-            return TopicCard(topic: topics[index]);
-          },
-        ),
+                ],
+              ),
+            );
+          }
+          return ListView.builder(
+            itemCount: result.topics.length + (result.fromCache ? 1 : 0) + 1,
+            itemBuilder: (context, index) {
+              if (result.fromCache && index == 0) {
+                return Container(
+                  margin: const EdgeInsets.all(12),
+                  padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 10),
+                  decoration: BoxDecoration(
+                    color: Theme.of(context).colorScheme.secondaryContainer.withOpacity(0.6),
+                    borderRadius: BorderRadius.circular(12),
+                  ),
+                  child: Row(
+                    children: [
+                      Icon(Icons.offline_bolt,
+                          color: Theme.of(context).colorScheme.onSecondaryContainer),
+                      const SizedBox(width: 8),
+                      Expanded(
+                        child: Text(
+                          '当前处于离线状态，展示缓存内容',
+                          style: TextStyle(
+                            fontSize: 13,
+                            color: Theme.of(context).colorScheme.onSecondaryContainer,
+                          ),
+                        ),
+                      ),
+                    ],
+                  ),
+                );
+              }
+              final topicIndex = result.fromCache ? index - 1 : index;
+              if (topicIndex == result.topics.length) {
+                return const Padding(
+                  padding: EdgeInsets.symmetric(vertical: 24),
+                  child: Center(
+                    child: Text(
+                      '—— 已显示全部内容 ——',
+                      style: TextStyle(color: Colors.grey, fontSize: 12),
+                    ),
+                  ),
+                );
+              }
+              return TopicCard(topic: result.topics[topicIndex]);
+            },
+          );
+        },
         loading: () => const Center(child: CircularProgressIndicator()),
         error: (err, stack) => Center(
           child: Column(
