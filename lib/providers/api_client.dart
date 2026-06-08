@@ -2,6 +2,7 @@ import 'package:dio/dio.dart';
 import 'package:dio_cookie_manager/dio_cookie_manager.dart';
 import 'package:cookie_jar/cookie_jar.dart';
 import 'package:flutter/foundation.dart';
+import 'package:html/parser.dart' show parse;
 
 class V2exApiClient {
   static final V2exApiClient _instance = V2exApiClient._internal();
@@ -106,5 +107,65 @@ class V2exApiClient {
       return response.data as List<dynamic>;
     }
     throw Exception('Invalid response format');
+  }
+
+  // ---------- 网页表单操作（需要 once token） ----------
+
+  Future<String> _fetchOnce(String urlPath) async {
+    final response = await _dio.get('https://www.v2ex.com$urlPath');
+    final html = response.data as String;
+    // 尝试提取 var once = "12345";
+    final regex = RegExp(r'var once = "(\d+)"');
+    final match = regex.firstMatch(html);
+    if (match != null) return match.group(1)!;
+    // fallback: 从表单解析
+    final doc = parse(html);
+    final input = doc.querySelector('input[name="once"]');
+    if (input != null) {
+      final val = input.attributes['value'];
+      if (val != null && val.isNotEmpty) return val;
+    }
+    throw Exception('无法获取 once token');
+  }
+
+  Future<void> replyTopic(int topicId, String content) async {
+    final once = await _fetchOnce('/t/$topicId');
+    final response = await _dio.post(
+      'https://www.v2ex.com/t/$topicId/reply',
+      data: FormData.fromMap({
+        'content': content,
+        'once': once,
+      }),
+      options: Options(
+        headers: {
+          'Referer': 'https://www.v2ex.com/t/$topicId',
+        },
+        validateStatus: (s) => s != null && s < 500,
+      ),
+    );
+    if (response.statusCode != 200) {
+      throw Exception('回帖失败: ${response.statusCode}');
+    }
+  }
+
+  Future<void> createTopic(String nodeName, String title, String content) async {
+    final once = await _fetchOnce('/new/$nodeName');
+    final response = await _dio.post(
+      'https://www.v2ex.com/new/$nodeName',
+      data: FormData.fromMap({
+        'title': title,
+        'content': content,
+        'once': once,
+      }),
+      options: Options(
+        headers: {
+          'Referer': 'https://www.v2ex.com/new/$nodeName',
+        },
+        validateStatus: (s) => s != null && s < 500,
+      ),
+    );
+    if (response.statusCode != 200) {
+      throw Exception('发帖失败: ${response.statusCode}');
+    }
   }
 }

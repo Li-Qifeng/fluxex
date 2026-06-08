@@ -1,9 +1,11 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_widget_from_html_core/flutter_widget_from_html_core.dart';
+import 'package:go_router/go_router.dart';
 import 'package:intl/intl.dart';
 import 'package:url_launcher/url_launcher.dart';
 import '../providers/topic_detail_provider.dart';
+import '../utils/db_helper.dart';
 import '../utils/image_extractor.dart';
 import '../widgets/image_gallery.dart';
 import '../widgets/reply_item.dart';
@@ -29,6 +31,29 @@ class TopicDetailScreen extends ConsumerWidget {
         centerTitle: true,
         actions: [
           IconButton(
+            icon: const Icon(Icons.bookmark_border),
+            tooltip: '收藏',
+            onPressed: () async {
+              final topic = await ref.read(topicDetailProvider(topicId).future);
+              final isBookmarked = await DbHelper.isBookmarked(topicId);
+              if (isBookmarked) {
+                await DbHelper.removeBookmark(topicId);
+                if (context.mounted) {
+                  ScaffoldMessenger.of(context).showSnackBar(
+                    const SnackBar(content: Text('已取消收藏')),
+                  );
+                }
+              } else {
+                await DbHelper.addBookmark(topicId, topic.title);
+                if (context.mounted) {
+                  ScaffoldMessenger.of(context).showSnackBar(
+                    const SnackBar(content: Text('已收藏')),
+                  );
+                }
+              }
+            },
+          ),
+          IconButton(
             icon: const Icon(Icons.open_in_browser),
             tooltip: '在网页中打开',
             onPressed: () async {
@@ -41,7 +66,10 @@ class TopicDetailScreen extends ConsumerWidget {
         ],
       ),
       body: topicAsync.when(
-        data: (topic) => RefreshIndicator(
+        data: (topic) {
+          // 记录浏览历史
+          DbHelper.addBrowseHistory(topicId, topic.title);
+          return RefreshIndicator(
           onRefresh: () async {
             ref.invalidate(topicDetailProvider(topicId));
             ref.invalidate(topicRepliesProvider(topicId));
@@ -193,8 +221,9 @@ class TopicDetailScreen extends ConsumerWidget {
               const SliverPadding(padding: EdgeInsets.only(bottom: 32)),
             ],
           ),
-        ),
-        loading: () => const Center(child: CircularProgressIndicator()),
+        );
+      },
+      loading: () => const Center(child: CircularProgressIndicator()),
         error: (err, stack) => Center(
           child: Column(
             mainAxisAlignment: MainAxisAlignment.center,
@@ -210,6 +239,16 @@ class TopicDetailScreen extends ConsumerWidget {
             ],
           ),
         ),
+      ),
+      floatingActionButton: FloatingActionButton.extended(
+        onPressed: () async {
+          final result = await context.push('/reply/$topicId');
+          if (result == true) {
+            ref.invalidate(topicRepliesProvider(topicId));
+          }
+        },
+        icon: const Icon(Icons.reply),
+        label: const Text('回复'),
       ),
     );
   }

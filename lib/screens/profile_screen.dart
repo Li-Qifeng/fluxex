@@ -73,9 +73,12 @@ class _ProfileScreenState extends ConsumerState<ProfileScreen> {
           const SizedBox(height: 16),
           if (!auth.isLoggedIn) ...[
             FilledButton.icon(
-              onPressed: _launchLogin,
-              icon: const Icon(Icons.open_in_browser),
-              label: const Text('去网页登录'),
+              onPressed: () async {
+                final result = await context.push('/login');
+                if (result == true) setState(() {});
+              },
+              icon: const Icon(Icons.login),
+              label: const Text('登录'),
             ),
             const SizedBox(height: 8),
             OutlinedButton.icon(
@@ -127,6 +130,12 @@ class _ProfileScreenState extends ConsumerState<ProfileScreen> {
           const SizedBox(height: 32),
           const Divider(),
           const SizedBox(height: 8),
+          ListTile(
+            leading: const Icon(Icons.bookmark_border),
+            title: const Text('书签'),
+            trailing: const Icon(Icons.chevron_right),
+            onTap: () => context.push('/bookmarks'),
+          ),
           ListTile(
             leading: const Icon(Icons.notifications_none),
             title: const Text('通知中心'),

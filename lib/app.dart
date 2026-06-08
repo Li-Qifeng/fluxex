@@ -5,6 +5,9 @@ import 'screens/home_screen.dart';
 import 'screens/nodes_screen.dart';
 import 'screens/search_screen.dart';
 import 'screens/profile_screen.dart';
+import 'screens/bookmarks_screen.dart';
+import 'screens/login_webview_screen.dart';
+import 'screens/reply_screen.dart';
 import 'screens/notifications_screen.dart';
 import 'screens/node_detail_screen.dart';
 import 'screens/member_detail_screen.dart';
@@ -46,6 +49,24 @@ class V2exApp extends StatelessWidget {
         ),
         GoRoute(
           parentNavigatorKey: _rootNavigatorKey,
+          path: '/bookmarks',
+          builder: (context, state) => const BookmarksScreen(),
+        ),
+        GoRoute(
+          parentNavigatorKey: _rootNavigatorKey,
+          path: '/reply/:id',
+          builder: (context, state) {
+            final id = int.parse(state.pathParameters['id']!);
+            return ReplyScreen(topicId: id);
+          },
+        ),
+        GoRoute(
+          parentNavigatorKey: _rootNavigatorKey,
+          path: '/login',
+          builder: (context, state) => const LoginWebViewScreen(),
+        ),
+        GoRoute(
+          parentNavigatorKey: _rootNavigatorKey,
           path: '/notifications',
           builder: (context, state) => const NotificationsScreen(),
         ),
@@ -78,7 +99,7 @@ class V2exApp extends StatelessWidget {
 
     return ProviderScope(
       child: MaterialApp.router(
-        title: 'V2EX Client',
+        title: 'FluxEx',
         debugShowCheckedModeBanner: false,
         theme: ThemeData(
           colorScheme: ColorScheme.fromSeed(
