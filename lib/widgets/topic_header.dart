@@ -4,6 +4,7 @@ import 'package:go_router/go_router.dart';
 import '../models/topic.dart';
 import '../utils/html_styles.dart';
 import '../utils/image_extractor.dart';
+import '../utils/link_actions.dart';
 import '../utils/time_util.dart';
 import 'image_gallery.dart';
 
@@ -92,6 +93,10 @@ class TopicHeader extends StatelessWidget {
                   color: cs.onSurfaceVariant,
                 ),
                 customStylesBuilder: codeBlockStylesBuilder,
+                onTapUrl: (url) {
+                  showUrlOptions(context, url);
+                  return true;
+                },
               ),
               ImageGallery(urls: extractImageUrls(topic.contentRendered!)),
             ] else if (topic.content != null && topic.content!.isNotEmpty) ...[

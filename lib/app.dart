@@ -14,6 +14,7 @@ import 'screens/notifications_screen.dart';
 import 'screens/node_detail_screen.dart';
 import 'screens/member_detail_screen.dart';
 import 'screens/topic_detail_screen.dart';
+import 'widgets/constrained_content.dart';
 
 final _rootNavigatorKey = GlobalKey<NavigatorState>();
 final _shellNavigatorKey = GlobalKey<NavigatorState>();
@@ -165,7 +166,7 @@ class ScaffoldWithNavBar extends ConsumerWidget {
     }
 
     return Scaffold(
-      body: child,
+      body: ConstrainedContent(child: child),
       bottomNavigationBar: NavigationBar(
         selectedIndex: currentIndex,
         onDestinationSelected: (index) {

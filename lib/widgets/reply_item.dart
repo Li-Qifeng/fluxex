@@ -3,6 +3,7 @@ import 'package:flutter_widget_from_html_core/flutter_widget_from_html_core.dart
 import 'package:go_router/go_router.dart';
 import '../models/reply.dart';
 import '../utils/html_styles.dart';
+import '../utils/link_actions.dart';
 import '../utils/time_util.dart';
 
 class ReplyItem extends StatelessWidget {
@@ -131,6 +132,10 @@ class ReplyItem extends StatelessWidget {
                   color: cs.onSurfaceVariant,
                 ),
                 customStylesBuilder: codeBlockStylesBuilder,
+                onTapUrl: (url) {
+                  showUrlOptions(context, url);
+                  return true;
+                },
               )
             else if (bodyContent != null)
               Text(

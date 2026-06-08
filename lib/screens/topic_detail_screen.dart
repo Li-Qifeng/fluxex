@@ -1,9 +1,9 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
-import 'package:go_router/go_router.dart';
 import 'package:url_launcher/url_launcher.dart';
 import '../providers/topic_detail_provider.dart';
 import '../utils/db_helper.dart';
+import '../widgets/reply_bottom_sheet.dart';
 import '../widgets/shimmer_skeleton.dart';
 import '../widgets/topic_header.dart';
 import '../widgets/reply_item.dart';
@@ -244,9 +244,22 @@ class _TopicDetailScreenState extends ConsumerState<TopicDetailScreen> {
             child: FloatingActionButton(
               heroTag: 'reply',
               onPressed: () async {
-                final result = await context.push('/reply/${widget.topicId}');
+                final result = await showModalBottomSheet<bool>(
+                  context: context,
+                  isScrollControlled: true,
+                  backgroundColor: Theme.of(context).colorScheme.surface,
+                  shape: const RoundedRectangleBorder(
+                    borderRadius: BorderRadius.vertical(top: Radius.circular(20)),
+                  ),
+                  builder: (context) => ReplyBottomSheet(topicId: widget.topicId),
+                );
                 if (result == true) {
                   ref.invalidate(topicRepliesProvider(widget.topicId));
+                  if (mounted) {
+                    ScaffoldMessenger.of(context).showSnackBar(
+                      const SnackBar(content: Text('回复成功')),
+                    );
+                  }
                 }
               },
               child: const Icon(Icons.reply),
