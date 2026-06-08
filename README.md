@@ -1,16 +1,37 @@
-# v2ex_client
+# FluxEx
 
-A new Flutter project.
+> A modern, cross-platform V2EX client inspired by FluxDO.
 
-## Getting Started
+## Features
 
-This project is a starting point for a Flutter application.
+- **Browse V2EX**: Hot, Latest topics and Node-based browsing
+- **Search**: Integrated sov2ex.com search
+- **User Profiles**: View member info and their topics
+- **Notifications**: Check unread notifications with red dot indicators
+- **Image Viewer**: Extract and view topic images with zoom support
+- **Multi-platform**: Android, iOS, macOS, Windows, Linux, Web
 
-A few resources to get you started if this is your first Flutter project:
+## Download
 
-- [Lab: Write your first Flutter app](https://docs.flutter.dev/get-started/codelab)
-- [Cookbook: Useful Flutter samples](https://docs.flutter.dev/cookbook)
+Get the latest release from [GitHub Releases](https://github.com/Li-Qifeng/fluxex/releases).
 
-For help getting started with Flutter development, view the
-[online documentation](https://docs.flutter.dev/), which offers tutorials,
-samples, guidance on mobile development, and a full API reference.
+## Tech Stack
+
+- **Framework**: Flutter 3.24+
+- **State Management**: Riverpod
+- **Routing**: go_router
+- **Network**: Dio + CookieJar
+- **UI**: Material 3
+
+## Build
+
+```bash
+flutter pub get
+flutter build <platform>
+```
+
+Supported platforms: `apk`, `ios`, `macos`, `windows`, `linux`, `web`.
+
+## License
+
+MIT
