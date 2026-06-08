@@ -1,3 +1,4 @@
+import 'dart:async';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:url_launcher/url_launcher.dart';
@@ -21,37 +22,69 @@ class _TopicDetailScreenState extends ConsumerState<TopicDetailScreen> {
   final ScrollController _scrollController = ScrollController();
   int _currentFloor = 0;
   int _totalReplies = 0;
+  Timer? _saveTimer;
 
   @override
   void initState() {
     super.initState();
     _scrollController.addListener(_onScroll);
+    _restorePosition();
+  }
+
+  Future<void> _restorePosition() async {
+    final entry = await DbHelper.getBrowseHistoryEntry(widget.topicId);
+    if (entry == null) return;
+    final floor = (entry['last_floor'] as num?)?.toInt() ?? 0;
+    if (floor <= 0 || !mounted) return;
+    await Future.delayed(const Duration(milliseconds: 800));
+    if (!mounted) return;
+    final messenger = ScaffoldMessenger.of(context);
+    messenger.showSnackBar(
+      SnackBar(
+        content: Text('上次阅读到第 $floor 楼'),
+        action: SnackBarAction(
+          label: '跳转',
+          onPressed: () => _jumpToFloor(floor),
+        ),
+        duration: const Duration(seconds: 4),
+      ),
+    );
   }
 
   @override
   void dispose() {
     _scrollController.removeListener(_onScroll);
     _scrollController.dispose();
+    _saveTimer?.cancel();
     super.dispose();
   }
 
   void _onScroll() {
     if (!mounted || _totalReplies == 0) return;
-    // 粗略估算当前楼层：Header 约 300dp，每个 reply 约 120dp
     const headerEstimate = 300.0;
     const itemEstimate = 120.0;
     final offset = _scrollController.offset;
+    int floor;
     if (offset < headerEstimate) {
-      if (_currentFloor != 0) {
-        setState(() => _currentFloor = 0);
-      }
-      return;
+      floor = 0;
+    } else {
+      floor = ((offset - headerEstimate) / itemEstimate).floor() + 1;
+      floor = floor.clamp(1, _totalReplies);
     }
-    final estimated = ((offset - headerEstimate) / itemEstimate).floor() + 1;
-    final floor = estimated.clamp(1, _totalReplies);
     if (floor != _currentFloor) {
       setState(() => _currentFloor = floor);
     }
+    // Debounce save position every 1.5s after scroll stops
+    _saveTimer?.cancel();
+    _saveTimer = Timer(const Duration(milliseconds: 1500), () {
+      if (!mounted || _currentFloor <= 0) return;
+      DbHelper.addBrowseHistory(
+        widget.topicId,
+        '',
+        lastFloor: _currentFloor,
+        scrollOffset: offset.toInt(),
+      );
+    });
   }
 
   Future<void> _jumpToFloor(int floor) async {

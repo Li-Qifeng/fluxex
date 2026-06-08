@@ -15,33 +15,49 @@ class DbHelper {
     final path = join(dbPath, 'fluxex.db');
     return openDatabase(
       path,
-      version: 1,
+      version: 2,
       onCreate: (db, version) async {
-        await db.execute('''
-          CREATE TABLE cached_topics (
-            id INTEGER PRIMARY KEY,
-            json TEXT NOT NULL,
-            tab TEXT NOT NULL,
-            updated_at INTEGER NOT NULL
-          )
-        ''');
-        await db.execute('''
-          CREATE TABLE browse_history (
-            topic_id INTEGER PRIMARY KEY,
-            title TEXT,
-            viewed_at INTEGER NOT NULL
-          )
-        ''');
-        await db.execute('''
-          CREATE TABLE bookmarks (
-            topic_id INTEGER PRIMARY KEY,
-            title TEXT,
-            note TEXT,
-            bookmarked_at INTEGER NOT NULL
-          )
-        ''');
+        await _createTables(db);
+      },
+      onUpgrade: (db, oldVersion, newVersion) async {
+        if (oldVersion < 2) {
+          await db.execute('''
+            ALTER TABLE browse_history ADD COLUMN last_floor INTEGER DEFAULT 0
+          ''');
+          await db.execute('''
+            ALTER TABLE browse_history ADD COLUMN scroll_offset INTEGER DEFAULT 0
+          ''');
+        }
       },
     );
+  }
+
+  static Future<void> _createTables(Database db) async {
+    await db.execute('''
+      CREATE TABLE cached_topics (
+        id INTEGER PRIMARY KEY,
+        json TEXT NOT NULL,
+        tab TEXT NOT NULL,
+        updated_at INTEGER NOT NULL
+      )
+    ''');
+    await db.execute('''
+      CREATE TABLE browse_history (
+        topic_id INTEGER PRIMARY KEY,
+        title TEXT,
+        viewed_at INTEGER NOT NULL,
+        last_floor INTEGER DEFAULT 0,
+        scroll_offset INTEGER DEFAULT 0
+      )
+    ''');
+    await db.execute('''
+      CREATE TABLE bookmarks (
+        topic_id INTEGER PRIMARY KEY,
+        title TEXT,
+        note TEXT,
+        bookmarked_at INTEGER NOT NULL
+      )
+    ''');
   }
 
   // ========== Cached Topics ==========
@@ -71,13 +87,33 @@ class DbHelper {
   }
 
   // ========== Browse History ==========
-  static Future<void> addBrowseHistory(int topicId, String title) async {
+  static Future<void> addBrowseHistory(int topicId, String title, {int lastFloor = 0, int scrollOffset = 0}) async {
     final db = await database;
+    if (title.isEmpty) {
+      final rows = await db.query('browse_history',
+        where: 'topic_id = ?', whereArgs: [topicId], limit: 1);
+      if (rows.isNotEmpty) {
+        title = (rows.first['title'] as String?) ?? '';
+      }
+    }
     await db.insert('browse_history', {
       'topic_id': topicId,
       'title': title,
       'viewed_at': DateTime.now().millisecondsSinceEpoch,
+      'last_floor': lastFloor,
+      'scroll_offset': scrollOffset,
     }, conflictAlgorithm: ConflictAlgorithm.replace);
+  }
+
+  static Future<Map<String, dynamic>?> getBrowseHistoryEntry(int topicId) async {
+    final db = await database;
+    final rows = await db.query('browse_history',
+      where: 'topic_id = ?',
+      whereArgs: [topicId],
+      limit: 1,
+    );
+    if (rows.isEmpty) return null;
+    return rows.first;
   }
 
   static Future<List<Map<String, dynamic>>> getBrowseHistory({int limit = 50}) async {
