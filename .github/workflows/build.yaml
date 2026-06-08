@@ -5,6 +5,9 @@ on:
     tags:
       - 'v*'
 
+permissions:
+  contents: write
+
 env:
   IS_STABLE: ${{ !contains(github.ref, '-') }}
 
@@ -76,7 +79,7 @@ jobs:
         run: |
           flutter build apk --release --target-platform ${{ matrix.flutter-target }}
           mkdir -p dist
-          mv build/app/outputs/flutter-apk/app-release.apk dist/v2ex_client-${{ matrix.arch }}.apk
+          mv build/app/outputs/flutter-apk/app-release.apk dist/fluxex-${{ matrix.arch }}.apk
 
       - name: Build iOS
         if: matrix.platform == 'ios'
@@ -86,7 +89,7 @@ jobs:
           cd build/ios/iphoneos
           mkdir Payload
           cp -r Runner.app Payload/
-          zip -r ../../dist/v2ex_client-unsigned.ipa Payload
+          zip -r ../../dist/fluxex-unsigned.ipa Payload
 
       - name: Build macOS
         if: matrix.platform == 'macos'
@@ -94,7 +97,7 @@ jobs:
           flutter build macos --release
           mkdir -p dist
           cd build/macos/Build/Products/Release
-          zip -r ../../../../../dist/v2ex_client-macos.zip v2ex_client.app
+          zip -r ../../../../../dist/fluxex-macos.zip fluxex.app
 
       - name: Build Windows
         if: matrix.platform == 'windows'
@@ -102,7 +105,7 @@ jobs:
           flutter build windows --release
           mkdir -p dist
           cd build/windows/x64/runner/Release
-          7z a ../../../../../dist/v2ex_client-windows.zip *
+          7z a ../../../../../dist/fluxex-windows.zip *
 
       - name: Build Linux
         if: matrix.platform == 'linux'
@@ -110,7 +113,7 @@ jobs:
           flutter build linux --release
           mkdir -p dist
           cd build/linux/x64/release/bundle
-          tar czf ../../../../../dist/v2ex_client-linux.tar.gz *
+          tar czf ../../../../../dist/fluxex-linux.tar.gz *
 
       - name: Upload artifacts
         uses: actions/upload-artifact@v4
@@ -118,8 +121,25 @@ jobs:
           name: ${{ matrix.platform }}-${{ matrix.arch }}
           path: dist/
 
+  release:
+    needs: build
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Download all artifacts
+        uses: actions/download-artifact@v4
+        with:
+          path: artifacts/
+
+      - name: Prepare dist directory
+        run: |
+          mkdir -p dist
+          find artifacts -type f -exec mv {} dist/ \;
+          ls -la dist/
+
       - name: Release
-        if: startsWith(github.ref, 'refs/tags/')
         uses: softprops/action-gh-release@v1
         with:
           files: dist/*
