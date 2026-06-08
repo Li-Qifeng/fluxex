@@ -17,7 +17,7 @@ class V2exApiClient {
       connectTimeout: const Duration(seconds: 10),
       receiveTimeout: const Duration(seconds: 10),
       headers: {
-        'User-Agent': 'FluxEx/0.1.5 (Flutter; Cross-platform; V2EX)',
+        'User-Agent': 'FluxEx/0.1.6 (Flutter; Cross-platform; V2EX)',
         'Accept': 'application/json',
       },
     ));
