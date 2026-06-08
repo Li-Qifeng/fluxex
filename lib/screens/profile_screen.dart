@@ -1,8 +1,10 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
+import 'package:url_launcher/url_launcher.dart';
 import '../providers/auth_provider.dart';
 import '../providers/notification_provider.dart';
+import '../providers/update_provider.dart';
 
 class ProfileScreen extends ConsumerStatefulWidget {
   const ProfileScreen({super.key});
@@ -25,6 +27,7 @@ class _ProfileScreenState extends ConsumerState<ProfileScreen> {
   Widget build(BuildContext context) {
     final auth = ref.watch(authProvider);
     final unreadCount = ref.watch(unreadCountProvider);
+    final updateInfo = ref.watch(updateInfoProvider);
 
     return Scaffold(
       appBar: AppBar(
@@ -141,13 +144,57 @@ class _ProfileScreenState extends ConsumerState<ProfileScreen> {
             trailing: const Icon(Icons.chevron_right),
             onTap: () => context.push('/notifications'),
           ),
-          const ListTile(
-            leading: Icon(Icons.info_outline),
-            title: Text('关于 V2EX Client'),
-            subtitle: Text('版本 0.1.0'),
-          ),
+          _UpdateTile(updateInfo: updateInfo),
         ],
       ),
     );
+  }
+}
+
+class _UpdateTile extends ConsumerWidget {
+  final AsyncValue<UpdateInfo> updateInfo;
+
+  const _UpdateTile({required this.updateInfo});
+
+  @override
+  Widget build(BuildContext context, WidgetRef ref) {
+    return updateInfo.when(
+      data: (info) => ListTile(
+        leading: Icon(
+          info.hasUpdate ? Icons.system_update_alt : Icons.info_outline,
+          color: info.hasUpdate ? Theme.of(context).colorScheme.primary : null,
+        ),
+        title: Text(info.hasUpdate ? '发现新版本 ${info.latestVersion}' : '已是最新版本'),
+        subtitle: Text('当前版本 ${info.currentVersion}'),
+        trailing: info.hasUpdate
+            ? FilledButton(
+                onPressed: () => _openRelease(info.releaseUrl),
+                child: const Text('更新'),
+              )
+            : IconButton(
+                tooltip: '重新检查',
+                onPressed: () => ref.invalidate(updateInfoProvider),
+                icon: const Icon(Icons.refresh),
+              ),
+      ),
+      loading: () => const ListTile(
+        leading: Icon(Icons.info_outline),
+        title: Text('检查更新中...'),
+        subtitle: LinearProgressIndicator(),
+      ),
+      error: (_, __) => ListTile(
+        leading: Icon(Icons.error_outline, color: Theme.of(context).colorScheme.error),
+        title: const Text('更新检查失败'),
+        subtitle: const Text('点击重试'),
+        onTap: () => ref.invalidate(updateInfoProvider),
+      ),
+    );
+  }
+
+  Future<void> _openRelease(String url) async {
+    final uri = Uri.parse(url);
+    if (await canLaunchUrl(uri)) {
+      await launchUrl(uri, mode: LaunchMode.externalApplication);
+    }
   }
 }

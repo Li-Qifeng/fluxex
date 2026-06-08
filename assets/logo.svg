@@ -1,0 +1,8 @@
+<svg version="1.2" baseProfile="tiny-ps" width="1024" height="1024" viewBox="0 0 1024 1024" xmlns="http://www.w3.org/2000/svg">
+  <title>FluxEx</title>
+  <circle cx="512" cy="512" r="512" fill="#1C1C1E"/>
+  <path fill="#F0F0F3" d="M255 306c0-44.2 35.8-80 80-80h354c44.2 0 80 35.8 80 80v252c0 44.2-35.8 80-80 80H457L337 758c-19 19-52.5 5.5-52.5-21.2V638H335c-44.2 0-80-35.8-80-80V306z"/>
+  <path fill="#1C1C1E" d="M347 349h154l-72 162h89l-139 178 42-132h-95l21-208z"/>
+  <path fill="#FFB003" d="M577 349h116c22.1 0 40 17.9 40 40v98c0 22.1-17.9 40-40 40H577c-22.1 0-40-17.9-40-40v-98c0-22.1 17.9-40 40-40z"/>
+  <path fill="#1C1C1E" d="M584 393h144v35H584v-35zm0 67h96v35h-96v-35z" opacity="0.88"/>
+</svg>
