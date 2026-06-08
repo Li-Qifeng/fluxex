@@ -1,8 +1,5 @@
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:dio/dio.dart';
-import '../models/topic.dart';
-import '../models/node.dart';
-import '../models/member.dart';
 
 class SearchResult {
   final int id;

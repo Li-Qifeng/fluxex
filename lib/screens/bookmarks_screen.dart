@@ -2,7 +2,6 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 import '../utils/db_helper.dart';
-import '../models/topic.dart';
 
 final bookmarksProvider = FutureProvider<List<Map<String, dynamic>>>((ref) async {
   return DbHelper.getBookmarks();

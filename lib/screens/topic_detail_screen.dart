@@ -6,6 +6,7 @@ import 'package:intl/intl.dart';
 import 'package:url_launcher/url_launcher.dart';
 import '../providers/topic_detail_provider.dart';
 import '../utils/db_helper.dart';
+import '../utils/html_styles.dart';
 import '../utils/image_extractor.dart';
 import '../widgets/image_gallery.dart';
 import '../widgets/reply_item.dart';
@@ -130,6 +131,7 @@ class TopicDetailScreen extends ConsumerWidget {
                             height: 1.7,
                             color: Theme.of(context).colorScheme.onSurfaceVariant,
                           ),
+                          customStylesBuilder: codeBlockStylesBuilder,
                         ),
                         ImageGallery(urls: extractImageUrls(topic.contentRendered!)),
                       ] else if (topic.content != null && topic.content!.isNotEmpty) ...[

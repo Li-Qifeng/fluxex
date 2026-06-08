@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:url_launcher/url_launcher.dart';
+import '../providers/notification_provider.dart';
 import '../providers/notifications_provider.dart';
 
 class NotificationsScreen extends ConsumerWidget {
@@ -14,6 +15,16 @@ class NotificationsScreen extends ConsumerWidget {
       appBar: AppBar(
         title: const Text('通知'),
         centerTitle: true,
+        actions: [
+          IconButton(
+            tooltip: '刷新',
+            onPressed: () {
+              ref.invalidate(notificationsProvider);
+              ref.read(unreadCountProvider.notifier).refresh();
+            },
+            icon: const Icon(Icons.refresh),
+          ),
+        ],
       ),
       body: async.when(
         data: (items) {
@@ -64,8 +75,11 @@ class NotificationsScreen extends ConsumerWidget {
                       )
                     : null,
                 onTap: () async {
-                  if (item.href != null) {
-                    final uri = Uri.parse('https://www.v2ex.com${item.href}');
+                  final href = item.href;
+                  if (href != null) {
+                    final uri = Uri.parse(
+                      href.startsWith('http') ? href : 'https://www.v2ex.com$href',
+                    );
                     if (await canLaunchUrl(uri)) {
                       await launchUrl(uri, mode: LaunchMode.externalApplication);
                     }

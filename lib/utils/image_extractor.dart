@@ -1,4 +1,3 @@
-import 'package:flutter/material.dart';
 
 List<String> extractImageUrls(String html) {
   final regex = RegExp(r"""<img[^>]+src=["']([^"']+)["']""", caseSensitive: false);

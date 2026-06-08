@@ -12,7 +12,6 @@ class LoginWebViewScreen extends ConsumerStatefulWidget {
 
 class _LoginWebViewScreenState extends ConsumerState<LoginWebViewScreen> {
   double _progress = 0;
-  bool _loggingIn = false;
 
   Future<void> _extractAndSaveCookie(InAppWebViewController controller) async {
     final cookies = await CookieManager.instance().getCookies(url: WebUri('https://www.v2ex.com'));

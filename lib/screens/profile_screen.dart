@@ -1,8 +1,8 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
-import 'package:url_launcher/url_launcher.dart';
 import '../providers/auth_provider.dart';
+import '../providers/notification_provider.dart';
 
 class ProfileScreen extends ConsumerStatefulWidget {
   const ProfileScreen({super.key});
@@ -21,16 +21,10 @@ class _ProfileScreenState extends ConsumerState<ProfileScreen> {
     super.dispose();
   }
 
-  Future<void> _launchLogin() async {
-    final uri = Uri.parse('https://www.v2ex.com/signin');
-    if (await canLaunchUrl(uri)) {
-      await launchUrl(uri, mode: LaunchMode.externalApplication);
-    }
-  }
-
   @override
   Widget build(BuildContext context) {
     final auth = ref.watch(authProvider);
+    final unreadCount = ref.watch(unreadCountProvider);
 
     return Scaffold(
       appBar: AppBar(
@@ -137,15 +131,20 @@ class _ProfileScreenState extends ConsumerState<ProfileScreen> {
             onTap: () => context.push('/bookmarks'),
           ),
           ListTile(
-            leading: const Icon(Icons.notifications_none),
+            leading: unreadCount > 0
+                ? Badge(
+                    label: Text(unreadCount > 99 ? '99+' : '$unreadCount'),
+                    child: const Icon(Icons.notifications_none),
+                  )
+                : const Icon(Icons.notifications_none),
             title: const Text('通知中心'),
             trailing: const Icon(Icons.chevron_right),
             onTap: () => context.push('/notifications'),
           ),
-          ListTile(
-            leading: const Icon(Icons.info_outline),
-            title: const Text('关于 V2EX Client'),
-            subtitle: const Text('版本 0.1.0'),
+          const ListTile(
+            leading: Icon(Icons.info_outline),
+            title: Text('关于 V2EX Client'),
+            subtitle: Text('版本 0.1.0'),
           ),
         ],
       ),

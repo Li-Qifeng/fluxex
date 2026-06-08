@@ -168,4 +168,20 @@ class V2exApiClient {
       throw Exception('发帖失败: ${response.statusCode}');
     }
   }
+
+  Future<int> fetchUnreadNotificationCount() async {
+    try {
+      final response = await _dio.get('https://www.v2ex.com/notifications');
+      final html = response.data as String;
+      final doc = parse(html);
+      final items = doc.querySelectorAll('.notification_item');
+      int unread = 0;
+      for (final item in items) {
+        if (item.classes.contains('unread')) unread++;
+      }
+      return unread;
+    } catch (_) {
+      return 0;
+    }
+  }
 }

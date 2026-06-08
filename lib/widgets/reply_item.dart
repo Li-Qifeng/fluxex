@@ -3,6 +3,7 @@ import 'package:flutter_widget_from_html_core/flutter_widget_from_html_core.dart
 import 'package:go_router/go_router.dart';
 import 'package:intl/intl.dart';
 import '../models/reply.dart';
+import '../utils/html_styles.dart';
 
 class ReplyItem extends StatelessWidget {
   final Reply reply;
@@ -83,6 +84,7 @@ class ReplyItem extends StatelessWidget {
                 height: 1.6,
                 color: colorScheme.onSurfaceVariant,
               ),
+              customStylesBuilder: codeBlockStylesBuilder,
             )
           else if (reply.content != null)
             Text(
