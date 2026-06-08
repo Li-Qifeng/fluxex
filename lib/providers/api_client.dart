@@ -75,4 +75,36 @@ class V2exApiClient {
     }
     throw Exception('Invalid response format');
   }
+
+  Future<Map<String, dynamic>> getNodeInfoByName(String name) async {
+    final response = await _dio.get('/api/nodes/show.json', queryParameters: {'name': name});
+    if (response.data is Map) {
+      return response.data as Map<String, dynamic>;
+    }
+    throw Exception('Invalid response format');
+  }
+
+  Future<List<dynamic>> getNodeTopics(String nodeName) async {
+    final response = await _dio.get('/api/topics/show.json', queryParameters: {'node_name': nodeName});
+    if (response.data is List) {
+      return response.data as List<dynamic>;
+    }
+    throw Exception('Invalid response format');
+  }
+
+  Future<List<dynamic>> getAllNodes() async {
+    final response = await _dio.get('/api/nodes/all.json');
+    if (response.data is List) {
+      return response.data as List<dynamic>;
+    }
+    throw Exception('Invalid response format');
+  }
+
+  Future<List<dynamic>> getUserTopics(String username) async {
+    final response = await _dio.get('/api/topics/show.json', queryParameters: {'username': username});
+    if (response.data is List) {
+      return response.data as List<dynamic>;
+    }
+    throw Exception('Invalid response format');
+  }
 }

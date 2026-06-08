@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import '../providers/topic_list_provider.dart';
 import '../widgets/topic_card.dart';
+import '../widgets/scroll_bottom_detector.dart';
 
 class HomeScreen extends ConsumerWidget {
   const HomeScreen({super.key});
@@ -11,6 +12,44 @@ class HomeScreen extends ConsumerWidget {
     final tab = ref.watch(topicTabProvider);
     final hotAsync = ref.watch(hotTopicsProvider);
     final latestAsync = ref.watch(latestTopicsProvider);
+
+    Widget buildList(AsyncValue<List<dynamic>> asyncValue, VoidCallback onRefresh) {
+      return asyncValue.when(
+        data: (topics) => ListView.builder(
+          itemCount: topics.length + 1,
+          itemBuilder: (context, index) {
+            if (index == topics.length) {
+              return const Padding(
+                padding: EdgeInsets.symmetric(vertical: 24),
+                child: Center(
+                  child: Text(
+                    '—— 已显示全部内容 ——',
+                    style: TextStyle(color: Colors.grey, fontSize: 12),
+                  ),
+                ),
+              );
+            }
+            return TopicCard(topic: topics[index]);
+          },
+        ),
+        loading: () => const Center(child: CircularProgressIndicator()),
+        error: (err, stack) => Center(
+          child: Column(
+            mainAxisAlignment: MainAxisAlignment.center,
+            children: [
+              Icon(Icons.error_outline, size: 48, color: Theme.of(context).colorScheme.error),
+              const SizedBox(height: 12),
+              Text('加载失败: $err'),
+              const SizedBox(height: 12),
+              FilledButton(
+                onPressed: onRefresh,
+                child: const Text('重试'),
+              ),
+            ],
+          ),
+        ),
+      );
+    }
 
     return Scaffold(
       appBar: AppBar(
@@ -52,51 +91,15 @@ class HomeScreen extends ConsumerWidget {
             tab == TopicTab.hot ? hotTopicsProvider.future : latestTopicsProvider.future,
           );
         },
-        child: tab == TopicTab.hot
-            ? hotAsync.when(
-                data: (topics) => ListView.builder(
-                  itemCount: topics.length,
-                  itemBuilder: (context, index) => TopicCard(topic: topics[index]),
-                ),
-                loading: () => const Center(child: CircularProgressIndicator()),
-                error: (err, stack) => Center(
-                  child: Column(
-                    mainAxisAlignment: MainAxisAlignment.center,
-                    children: [
-                      Icon(Icons.error_outline, size: 48, color: Theme.of(context).colorScheme.error),
-                      const SizedBox(height: 12),
-                      Text('加载失败: $err'),
-                      const SizedBox(height: 12),
-                      FilledButton(
-                        onPressed: () => ref.invalidate(hotTopicsProvider),
-                        child: const Text('重试'),
-                      ),
-                    ],
-                  ),
-                ),
-              )
-            : latestAsync.when(
-                data: (topics) => ListView.builder(
-                  itemCount: topics.length,
-                  itemBuilder: (context, index) => TopicCard(topic: topics[index]),
-                ),
-                loading: () => const Center(child: CircularProgressIndicator()),
-                error: (err, stack) => Center(
-                  child: Column(
-                    mainAxisAlignment: MainAxisAlignment.center,
-                    children: [
-                      Icon(Icons.error_outline, size: 48, color: Theme.of(context).colorScheme.error),
-                      const SizedBox(height: 12),
-                      Text('加载失败: $err'),
-                      const SizedBox(height: 12),
-                      FilledButton(
-                        onPressed: () => ref.invalidate(latestTopicsProvider),
-                        child: const Text('重试'),
-                      ),
-                    ],
-                  ),
-                ),
-              ),
+        child: ScrollBottomDetector(
+          onBottomReached: () {
+            ref.invalidate(hotTopicsProvider);
+            ref.invalidate(latestTopicsProvider);
+          },
+          child: tab == TopicTab.hot
+              ? buildList(hotAsync, () => ref.invalidate(hotTopicsProvider))
+              : buildList(latestAsync, () => ref.invalidate(latestTopicsProvider)),
+        ),
       ),
     );
   }

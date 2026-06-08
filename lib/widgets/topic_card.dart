@@ -39,23 +39,27 @@ class TopicCard extends StatelessWidget {
             children: [
               Row(
                 children: [
-                  Container(
-                    padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 3),
-                    decoration: BoxDecoration(
-                      color: colorScheme.primaryContainer,
-                      borderRadius: BorderRadius.circular(6),
-                    ),
-                    child: Text(
-                      topic.node.title,
-                      style: TextStyle(
-                        fontSize: 11,
-                        color: colorScheme.onPrimaryContainer,
-                        fontWeight: FontWeight.w500,
+                  GestureDetector(
+                    onTap: () => context.push('/node/${topic.node.name}'),
+                    child: Container(
+                      padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 3),
+                      decoration: BoxDecoration(
+                        color: colorScheme.primaryContainer,
+                        borderRadius: BorderRadius.circular(6),
+                      ),
+                      child: Text(
+                        topic.node.title,
+                        style: TextStyle(
+                          fontSize: 11,
+                          color: colorScheme.onPrimaryContainer,
+                          fontWeight: FontWeight.w500,
+                        ),
                       ),
                     ),
                   ),
                   const SizedBox(width: 8),
-                  Expanded(
+                  GestureDetector(
+                    onTap: () => context.push('/member/${topic.member.username}'),
                     child: Text(
                       topic.member.username,
                       style: TextStyle(

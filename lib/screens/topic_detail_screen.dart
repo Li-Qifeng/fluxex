@@ -2,7 +2,10 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_widget_from_html_core/flutter_widget_from_html_core.dart';
 import 'package:intl/intl.dart';
+import 'package:url_launcher/url_launcher.dart';
 import '../providers/topic_detail_provider.dart';
+import '../utils/image_extractor.dart';
+import '../widgets/image_gallery.dart';
 import '../widgets/reply_item.dart';
 
 class TopicDetailScreen extends ConsumerWidget {
@@ -24,6 +27,18 @@ class TopicDetailScreen extends ConsumerWidget {
       appBar: AppBar(
         title: const Text('话题详情'),
         centerTitle: true,
+        actions: [
+          IconButton(
+            icon: const Icon(Icons.open_in_browser),
+            tooltip: '在网页中打开',
+            onPressed: () async {
+              final url = Uri.parse('https://www.v2ex.com/t/$topicId');
+              if (await canLaunchUrl(url)) {
+                await launchUrl(url, mode: LaunchMode.externalApplication);
+              }
+            },
+          ),
+        ],
       ),
       body: topicAsync.when(
         data: (topic) => RefreshIndicator(
@@ -88,6 +103,7 @@ class TopicDetailScreen extends ConsumerWidget {
                             color: Theme.of(context).colorScheme.onSurfaceVariant,
                           ),
                         ),
+                        ImageGallery(urls: extractImageUrls(topic.contentRendered!)),
                       ] else if (topic.content != null && topic.content!.isNotEmpty) ...[
                         const SizedBox(height: 16),
                         Text(

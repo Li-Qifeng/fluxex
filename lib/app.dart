@@ -1,9 +1,17 @@
 import 'package:flutter/material.dart';
-import 'package:flutter/services.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 import 'screens/home_screen.dart';
+import 'screens/nodes_screen.dart';
+import 'screens/search_screen.dart';
+import 'screens/profile_screen.dart';
+import 'screens/notifications_screen.dart';
+import 'screens/node_detail_screen.dart';
+import 'screens/member_detail_screen.dart';
 import 'screens/topic_detail_screen.dart';
+
+final _rootNavigatorKey = GlobalKey<NavigatorState>();
+final _shellNavigatorKey = GlobalKey<NavigatorState>();
 
 class V2exApp extends StatelessWidget {
   const V2exApp({super.key});
@@ -11,17 +19,58 @@ class V2exApp extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final router = GoRouter(
+      navigatorKey: _rootNavigatorKey,
       initialLocation: '/',
       routes: [
-        GoRoute(
-          path: '/',
-          builder: (context, state) => const HomeScreen(),
+        ShellRoute(
+          navigatorKey: _shellNavigatorKey,
+          builder: (context, state, child) => ScaffoldWithNavBar(child: child),
+          routes: [
+            GoRoute(
+              path: '/',
+              builder: (context, state) => const HomeScreen(),
+            ),
+            GoRoute(
+              path: '/nodes',
+              builder: (context, state) => const NodesScreen(),
+            ),
+            GoRoute(
+              path: '/search',
+              builder: (context, state) => const SearchScreen(),
+            ),
+            GoRoute(
+              path: '/profile',
+              builder: (context, state) => const ProfileScreen(),
+            ),
+          ],
         ),
         GoRoute(
+          parentNavigatorKey: _rootNavigatorKey,
+          path: '/notifications',
+          builder: (context, state) => const NotificationsScreen(),
+        ),
+        GoRoute(
+          parentNavigatorKey: _rootNavigatorKey,
           path: '/topic/:id',
           builder: (context, state) {
             final id = int.parse(state.pathParameters['id']!);
             return TopicDetailScreen(topicId: id);
+          },
+        ),
+        GoRoute(
+          parentNavigatorKey: _rootNavigatorKey,
+          path: '/member/:username',
+          builder: (context, state) {
+            final username = state.pathParameters['username']!;
+            return MemberDetailScreen(username: username);
+          },
+        ),
+        GoRoute(
+          parentNavigatorKey: _rootNavigatorKey,
+          path: '/node/:name',
+          builder: (context, state) {
+            final name = state.pathParameters['name']!;
+            return NodeDetailScreen(nodeName: name);
           },
         ),
       ],
@@ -69,6 +118,56 @@ class V2exApp extends StatelessWidget {
         ),
         themeMode: ThemeMode.system,
         routerConfig: router,
+      ),
+    );
+  }
+}
+
+class ScaffoldWithNavBar extends StatelessWidget {
+  final Widget child;
+
+  const ScaffoldWithNavBar({super.key, required this.child});
+
+  @override
+  Widget build(BuildContext context) {
+    final location = GoRouterState.of(context).uri.path;
+    int currentIndex = 0;
+    if (location.startsWith('/nodes')) currentIndex = 1;
+    if (location.startsWith('/search')) currentIndex = 2;
+    if (location.startsWith('/profile')) currentIndex = 3;
+
+    return Scaffold(
+      body: child,
+      bottomNavigationBar: NavigationBar(
+        selectedIndex: currentIndex,
+        onDestinationSelected: (index) {
+          if (index == 0) context.go('/');
+          if (index == 1) context.go('/nodes');
+          if (index == 2) context.go('/search');
+          if (index == 3) context.go('/profile');
+        },
+        destinations: const [
+          NavigationDestination(
+            icon: Icon(Icons.home_outlined),
+            selectedIcon: Icon(Icons.home),
+            label: '首页',
+          ),
+          NavigationDestination(
+            icon: Icon(Icons.account_tree_outlined),
+            selectedIcon: Icon(Icons.account_tree),
+            label: '节点',
+          ),
+          NavigationDestination(
+            icon: Icon(Icons.search_outlined),
+            selectedIcon: Icon(Icons.search),
+            label: '搜索',
+          ),
+          NavigationDestination(
+            icon: Icon(Icons.person_outline),
+            selectedIcon: Icon(Icons.person),
+            label: '账号',
+          ),
+        ],
       ),
     );
   }
