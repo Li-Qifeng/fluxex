@@ -3,6 +3,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:url_launcher/url_launcher.dart';
 import '../providers/notification_provider.dart';
 import '../providers/notifications_provider.dart';
+import '../widgets/cached_avatar.dart';
 
 class NotificationsScreen extends ConsumerStatefulWidget {
   const NotificationsScreen({super.key});
@@ -84,7 +85,11 @@ class _NotificationsScreenState extends ConsumerState<NotificationsScreen> {
               final item = items[index];
               return ListTile(
                 leading: item.avatarUrl != null
-                    ? CircleAvatar(backgroundImage: NetworkImage(item.avatarUrl!))
+                    ? CachedAvatar(
+                        imageUrl: item.avatarUrl,
+                        radius: 20,
+                        fallbackText: item.text.isNotEmpty ? item.text[0] : '?',
+                      )
                     : const CircleAvatar(child: Icon(Icons.person)),
                 title: Text(
                   item.text,

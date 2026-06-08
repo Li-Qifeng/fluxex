@@ -5,6 +5,7 @@ import '../models/reply.dart';
 import '../utils/html_styles.dart';
 import '../utils/link_actions.dart';
 import '../utils/time_util.dart';
+import '../widgets/cached_avatar.dart';
 
 class ReplyItem extends StatelessWidget {
   final Reply reply;
@@ -57,9 +58,10 @@ class ReplyItem extends StatelessWidget {
               children: [
                 GestureDetector(
                   onTap: () => context.push('/member/${reply.member.username}'),
-                  child: CircleAvatar(
+                  child: CachedAvatar(
+                    imageUrl: reply.member.avatarNormal,
                     radius: 16,
-                    backgroundImage: NetworkImage(reply.member.avatarNormal),
+                    fallbackText: reply.member.username,
                   ),
                 ),
                 const SizedBox(width: 10),

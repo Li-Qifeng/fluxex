@@ -85,8 +85,11 @@ class V2exApiClient {
     throw Exception('Invalid response format');
   }
 
-  Future<List<dynamic>> getNodeTopics(String nodeName) async {
-    final response = await _dio.get('/api/topics/show.json', queryParameters: {'node_name': nodeName});
+  Future<List<dynamic>> getNodeTopics(String nodeName, {int page = 1}) async {
+    final response = await _dio.get('/api/topics/show.json', queryParameters: {
+      'node_name': nodeName,
+      'page': page,
+    });
     if (response.data is List) {
       return response.data as List<dynamic>;
     }

@@ -15,7 +15,7 @@ class DbHelper {
     final path = join(dbPath, 'fluxex.db');
     return openDatabase(
       path,
-      version: 2,
+      version: 3,
       onCreate: (db, version) async {
         await _createTables(db);
       },
@@ -26,6 +26,15 @@ class DbHelper {
           ''');
           await db.execute('''
             ALTER TABLE browse_history ADD COLUMN scroll_offset INTEGER DEFAULT 0
+          ''');
+        }
+        if (oldVersion < 3) {
+          await db.execute('''
+            CREATE TABLE node_follows (
+              node_name TEXT PRIMARY KEY,
+              node_title TEXT NOT NULL,
+              followed_at INTEGER NOT NULL
+            )
           ''');
         }
       },
@@ -56,6 +65,13 @@ class DbHelper {
         title TEXT,
         note TEXT,
         bookmarked_at INTEGER NOT NULL
+      )
+    ''');
+    await db.execute('''
+      CREATE TABLE node_follows (
+        node_name TEXT PRIMARY KEY,
+        node_title TEXT NOT NULL,
+        followed_at INTEGER NOT NULL
       )
     ''');
   }
@@ -146,5 +162,31 @@ class DbHelper {
   static Future<List<Map<String, dynamic>>> getBookmarks() async {
     final db = await database;
     return db.query('bookmarks', orderBy: 'bookmarked_at DESC');
+  }
+
+  // ========== Node Follows ==========
+  static Future<void> followNode(String nodeName, String nodeTitle) async {
+    final db = await database;
+    await db.insert('node_follows', {
+      'node_name': nodeName,
+      'node_title': nodeTitle,
+      'followed_at': DateTime.now().millisecondsSinceEpoch,
+    }, conflictAlgorithm: ConflictAlgorithm.replace);
+  }
+
+  static Future<void> unfollowNode(String nodeName) async {
+    final db = await database;
+    await db.delete('node_follows', where: 'node_name = ?', whereArgs: [nodeName]);
+  }
+
+  static Future<bool> isNodeFollowed(String nodeName) async {
+    final db = await database;
+    final rows = await db.query('node_follows', where: 'node_name = ?', whereArgs: [nodeName]);
+    return rows.isNotEmpty;
+  }
+
+  static Future<List<Map<String, dynamic>>> getFollowedNodes() async {
+    final db = await database;
+    return db.query('node_follows', orderBy: 'followed_at DESC');
   }
 }

@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 import '../providers/node_provider.dart';
+import '../widgets/cached_avatar.dart';
 import '../widgets/state_widgets.dart';
 
 class NodesScreen extends ConsumerStatefulWidget {
@@ -54,10 +55,10 @@ class _NodesScreenState extends ConsumerState<NodesScreen> {
               final node = filtered[index];
               return ListTile(
                 leading: node.avatarNormal.isNotEmpty
-                    ? CircleAvatar(
+                    ? CachedAvatar(
+                        imageUrl: node.avatarNormal,
                         radius: 18,
-                        backgroundImage: NetworkImage(node.avatarNormal),
-                        backgroundColor: Colors.transparent,
+                        fallbackText: node.title,
                       )
                     : CircleAvatar(
                         radius: 18,

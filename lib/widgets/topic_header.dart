@@ -6,6 +6,7 @@ import '../utils/html_styles.dart';
 import '../utils/image_extractor.dart';
 import '../utils/link_actions.dart';
 import '../utils/time_util.dart';
+import '../widgets/cached_avatar.dart';
 import 'image_gallery.dart';
 
 class TopicHeader extends StatelessWidget {
@@ -36,9 +37,10 @@ class TopicHeader extends StatelessWidget {
               children: [
                 GestureDetector(
                   onTap: () => context.push('/member/${topic.member.username}'),
-                  child: CircleAvatar(
+                  child: CachedAvatar(
+                    imageUrl: topic.member.avatarNormal,
                     radius: 20,
-                    backgroundImage: NetworkImage(topic.member.avatarNormal),
+                    fallbackText: topic.member.username,
                   ),
                 ),
                 const SizedBox(width: 12),

@@ -3,6 +3,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 import 'providers/notification_provider.dart';
+import 'providers/settings_provider.dart';
 import 'screens/home_screen.dart';
 import 'screens/nodes_screen.dart';
 import 'screens/search_screen.dart';
@@ -14,12 +15,15 @@ import 'screens/notifications_screen.dart';
 import 'screens/node_detail_screen.dart';
 import 'screens/member_detail_screen.dart';
 import 'screens/topic_detail_screen.dart';
+import 'screens/create_topic_screen.dart';
+import 'screens/followed_nodes_screen.dart';
+import 'screens/settings_screen.dart';
 import 'widgets/constrained_content.dart';
 
 final _rootNavigatorKey = GlobalKey<NavigatorState>();
 final _shellNavigatorKey = GlobalKey<NavigatorState>();
 
-class V2exApp extends StatelessWidget {
+class V2exApp extends ConsumerWidget {
   const V2exApp({super.key});
 
   ThemeData _buildTheme(ColorScheme colorScheme) {
@@ -41,7 +45,8 @@ class V2exApp extends StatelessWidget {
   }
 
   @override
-  Widget build(BuildContext context) {
+  Widget build(BuildContext context, WidgetRef ref) {
+    final settings = ref.watch(settingsProvider);
     final router = GoRouter(
       navigatorKey: _rootNavigatorKey,
       initialLocation: '/',
@@ -115,6 +120,21 @@ class V2exApp extends StatelessWidget {
             return NodeDetailScreen(nodeName: name);
           },
         ),
+        GoRoute(
+          parentNavigatorKey: _rootNavigatorKey,
+          path: '/create-topic',
+          builder: (context, state) => const CreateTopicScreen(),
+        ),
+        GoRoute(
+          parentNavigatorKey: _rootNavigatorKey,
+          path: '/followed-nodes',
+          builder: (context, state) => const FollowedNodesScreen(),
+        ),
+        GoRoute(
+          parentNavigatorKey: _rootNavigatorKey,
+          path: '/settings',
+          builder: (context, state) => const SettingsScreen(),
+        ),
       ],
     );
 
@@ -134,7 +154,15 @@ class V2exApp extends StatelessWidget {
             debugShowCheckedModeBanner: false,
             theme: _buildTheme(lightDynamic ?? fallbackLight),
             darkTheme: _buildTheme(darkDynamic ?? fallbackDark),
-            themeMode: ThemeMode.system,
+            themeMode: settings.themeMode,
+            builder: (context, child) {
+              return MediaQuery(
+                data: MediaQuery.of(context).copyWith(
+                  textScaler: TextScaler.linear(settings.textScale),
+                ),
+                child: child!,
+              );
+            },
             routerConfig: router,
           );
         },

@@ -1,6 +1,8 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:go_router/go_router.dart';
 import '../models/topic_list_result.dart';
+import '../providers/auth_provider.dart';
 import '../providers/topic_list_provider.dart';
 import '../widgets/state_widgets.dart';
 import '../widgets/topic_card.dart';
@@ -14,6 +16,7 @@ class HomeScreen extends ConsumerWidget {
     final tab = ref.watch(topicTabProvider);
     final hotAsync = ref.watch(hotTopicsProvider);
     final latestAsync = ref.watch(latestTopicsProvider);
+    final auth = ref.watch(authProvider);
 
     Widget buildList(AsyncValue<TopicListResult> asyncValue, VoidCallback onRefresh) {
       return asyncValue.when(
@@ -78,6 +81,20 @@ class HomeScreen extends ConsumerWidget {
       appBar: AppBar(
         title: const Text('V2EX'),
         centerTitle: true,
+        actions: [
+          if (auth.isLoggedIn)
+            IconButton(
+              icon: const Icon(Icons.add),
+              tooltip: '发布新话题',
+              onPressed: () async {
+                final result = await context.push('/create-topic');
+                if (result == true) {
+                  ref.invalidate(hotTopicsProvider);
+                  ref.invalidate(latestTopicsProvider);
+                }
+              },
+            ),
+        ],
         bottom: PreferredSize(
           preferredSize: const Size.fromHeight(48),
           child: Padding(

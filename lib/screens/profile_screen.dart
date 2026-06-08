@@ -133,6 +133,12 @@ class _ProfileScreenState extends ConsumerState<ProfileScreen> {
             onTap: () => context.push('/bookmarks'),
           ),
           ListTile(
+            leading: const Icon(Icons.star_border),
+            title: const Text('已关注节点'),
+            trailing: const Icon(Icons.chevron_right),
+            onTap: () => context.push('/followed-nodes'),
+          ),
+          ListTile(
             leading: unreadCount > 0
                 ? Badge(
                     label: Text(unreadCount > 99 ? '99+' : '$unreadCount'),
@@ -142,6 +148,14 @@ class _ProfileScreenState extends ConsumerState<ProfileScreen> {
             title: const Text('通知中心'),
             trailing: const Icon(Icons.chevron_right),
             onTap: () => context.push('/notifications'),
+          ),
+          const Divider(),
+          const SizedBox(height: 8),
+          ListTile(
+            leading: const Icon(Icons.settings_outlined),
+            title: const Text('设置'),
+            trailing: const Icon(Icons.chevron_right),
+            onTap: () => context.push('/settings'),
           ),
           _UpdateTile(updateInfo: updateInfo),
         ],
