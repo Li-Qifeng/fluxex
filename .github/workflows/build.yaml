@@ -89,7 +89,7 @@ jobs:
           cd build/ios/iphoneos
           mkdir Payload
           cp -r Runner.app Payload/
-          zip -r ../../dist/fluxex-unsigned.ipa Payload
+          zip -r ../../../dist/fluxex-unsigned.ipa Payload
 
       - name: Build macOS
         if: matrix.platform == 'macos'
@@ -97,6 +97,7 @@ jobs:
           flutter build macos --release
           mkdir -p dist
           cd build/macos/Build/Products/Release
+          mv *.app fluxex.app || true
           zip -r ../../../../../dist/fluxex-macos.zip fluxex.app
 
       - name: Build Windows
