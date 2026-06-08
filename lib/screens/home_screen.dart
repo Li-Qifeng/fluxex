@@ -21,6 +21,12 @@ class HomeScreen extends ConsumerWidget {
     Widget buildList(AsyncValue<TopicListResult> asyncValue, VoidCallback onRefresh) {
       return asyncValue.when(
         data: (result) {
+          if (result.topics.isEmpty && result.error != null) {
+            return ErrorState(
+              message: '加载失败: ${result.error}',
+              onRetry: onRefresh,
+            );
+          }
           if (result.topics.isEmpty) {
             return EmptyState(onRetry: onRefresh);
           }

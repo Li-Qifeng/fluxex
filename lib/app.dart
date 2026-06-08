@@ -23,6 +23,97 @@ import 'widgets/constrained_content.dart';
 final _rootNavigatorKey = GlobalKey<NavigatorState>();
 final _shellNavigatorKey = GlobalKey<NavigatorState>();
 
+final appRouter = GoRouter(
+  navigatorKey: _rootNavigatorKey,
+  initialLocation: '/',
+  routes: [
+    ShellRoute(
+      navigatorKey: _shellNavigatorKey,
+      builder: (context, state, child) => ScaffoldWithNavBar(child: child),
+      routes: [
+        GoRoute(
+          path: '/',
+          builder: (context, state) => const HomeScreen(),
+        ),
+        GoRoute(
+          path: '/nodes',
+          builder: (context, state) => const NodesScreen(),
+        ),
+        GoRoute(
+          path: '/search',
+          builder: (context, state) => const SearchScreen(),
+        ),
+        GoRoute(
+          path: '/profile',
+          builder: (context, state) => const ProfileScreen(),
+        ),
+      ],
+    ),
+    GoRoute(
+      parentNavigatorKey: _rootNavigatorKey,
+      path: '/bookmarks',
+      builder: (context, state) => const BookmarksScreen(),
+    ),
+    GoRoute(
+      parentNavigatorKey: _rootNavigatorKey,
+      path: '/reply/:id',
+      builder: (context, state) {
+        final id = int.parse(state.pathParameters['id']!);
+        return ReplyScreen(topicId: id);
+      },
+    ),
+    GoRoute(
+      parentNavigatorKey: _rootNavigatorKey,
+      path: '/login',
+      builder: (context, state) => const LoginWebViewScreen(),
+    ),
+    GoRoute(
+      parentNavigatorKey: _rootNavigatorKey,
+      path: '/notifications',
+      builder: (context, state) => const NotificationsScreen(),
+    ),
+    GoRoute(
+      parentNavigatorKey: _rootNavigatorKey,
+      path: '/topic/:id',
+      builder: (context, state) {
+        final id = int.parse(state.pathParameters['id']!);
+        return TopicDetailScreen(topicId: id);
+      },
+    ),
+    GoRoute(
+      parentNavigatorKey: _rootNavigatorKey,
+      path: '/member/:username',
+      builder: (context, state) {
+        final username = state.pathParameters['username']!;
+        return MemberDetailScreen(username: username);
+      },
+    ),
+    GoRoute(
+      parentNavigatorKey: _rootNavigatorKey,
+      path: '/node/:name',
+      builder: (context, state) {
+        final name = state.pathParameters['name']!;
+        return NodeDetailScreen(nodeName: name);
+      },
+    ),
+    GoRoute(
+      parentNavigatorKey: _rootNavigatorKey,
+      path: '/create-topic',
+      builder: (context, state) => const CreateTopicScreen(),
+    ),
+    GoRoute(
+      parentNavigatorKey: _rootNavigatorKey,
+      path: '/followed-nodes',
+      builder: (context, state) => const FollowedNodesScreen(),
+    ),
+    GoRoute(
+      parentNavigatorKey: _rootNavigatorKey,
+      path: '/settings',
+      builder: (context, state) => const SettingsScreen(),
+    ),
+  ],
+);
+
 class V2exApp extends ConsumerWidget {
   const V2exApp({super.key});
 
@@ -47,96 +138,6 @@ class V2exApp extends ConsumerWidget {
   @override
   Widget build(BuildContext context, WidgetRef ref) {
     final settings = ref.watch(settingsProvider);
-    final router = GoRouter(
-      navigatorKey: _rootNavigatorKey,
-      initialLocation: '/',
-      routes: [
-        ShellRoute(
-          navigatorKey: _shellNavigatorKey,
-          builder: (context, state, child) => ScaffoldWithNavBar(child: child),
-          routes: [
-            GoRoute(
-              path: '/',
-              builder: (context, state) => const HomeScreen(),
-            ),
-            GoRoute(
-              path: '/nodes',
-              builder: (context, state) => const NodesScreen(),
-            ),
-            GoRoute(
-              path: '/search',
-              builder: (context, state) => const SearchScreen(),
-            ),
-            GoRoute(
-              path: '/profile',
-              builder: (context, state) => const ProfileScreen(),
-            ),
-          ],
-        ),
-        GoRoute(
-          parentNavigatorKey: _rootNavigatorKey,
-          path: '/bookmarks',
-          builder: (context, state) => const BookmarksScreen(),
-        ),
-        GoRoute(
-          parentNavigatorKey: _rootNavigatorKey,
-          path: '/reply/:id',
-          builder: (context, state) {
-            final id = int.parse(state.pathParameters['id']!);
-            return ReplyScreen(topicId: id);
-          },
-        ),
-        GoRoute(
-          parentNavigatorKey: _rootNavigatorKey,
-          path: '/login',
-          builder: (context, state) => const LoginWebViewScreen(),
-        ),
-        GoRoute(
-          parentNavigatorKey: _rootNavigatorKey,
-          path: '/notifications',
-          builder: (context, state) => const NotificationsScreen(),
-        ),
-        GoRoute(
-          parentNavigatorKey: _rootNavigatorKey,
-          path: '/topic/:id',
-          builder: (context, state) {
-            final id = int.parse(state.pathParameters['id']!);
-            return TopicDetailScreen(topicId: id);
-          },
-        ),
-        GoRoute(
-          parentNavigatorKey: _rootNavigatorKey,
-          path: '/member/:username',
-          builder: (context, state) {
-            final username = state.pathParameters['username']!;
-            return MemberDetailScreen(username: username);
-          },
-        ),
-        GoRoute(
-          parentNavigatorKey: _rootNavigatorKey,
-          path: '/node/:name',
-          builder: (context, state) {
-            final name = state.pathParameters['name']!;
-            return NodeDetailScreen(nodeName: name);
-          },
-        ),
-        GoRoute(
-          parentNavigatorKey: _rootNavigatorKey,
-          path: '/create-topic',
-          builder: (context, state) => const CreateTopicScreen(),
-        ),
-        GoRoute(
-          parentNavigatorKey: _rootNavigatorKey,
-          path: '/followed-nodes',
-          builder: (context, state) => const FollowedNodesScreen(),
-        ),
-        GoRoute(
-          parentNavigatorKey: _rootNavigatorKey,
-          path: '/settings',
-          builder: (context, state) => const SettingsScreen(),
-        ),
-      ],
-    );
 
     return DynamicColorBuilder(
       builder: (lightDynamic, darkDynamic) {
@@ -162,7 +163,7 @@ class V2exApp extends ConsumerWidget {
               child: child!,
             );
           },
-          routerConfig: router,
+          routerConfig: appRouter,
         );
       },
     );
