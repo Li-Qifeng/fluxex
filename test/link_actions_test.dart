@@ -1,5 +1,4 @@
 import 'package:flutter_test/flutter_test.dart';
-import 'package:fluxex/utils/link_actions.dart';
 
 void main() {
   group('isV2exInternalLink', () {

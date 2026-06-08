@@ -138,35 +138,33 @@ class V2exApp extends ConsumerWidget {
       ],
     );
 
-    return ProviderScope(
-      child: DynamicColorBuilder(
-        builder: (lightDynamic, darkDynamic) {
-          final fallbackLight = ColorScheme.fromSeed(
-            seedColor: const Color(0xFF446CB3),
-            brightness: Brightness.light,
-          );
-          final fallbackDark = ColorScheme.fromSeed(
-            seedColor: const Color(0xFF446CB3),
-            brightness: Brightness.dark,
-          );
-          return MaterialApp.router(
-            title: 'FluxEx',
-            debugShowCheckedModeBanner: false,
-            theme: _buildTheme(lightDynamic ?? fallbackLight),
-            darkTheme: _buildTheme(darkDynamic ?? fallbackDark),
-            themeMode: settings.themeMode,
-            builder: (context, child) {
-              return MediaQuery(
-                data: MediaQuery.of(context).copyWith(
-                  textScaler: TextScaler.linear(settings.textScale),
-                ),
-                child: child!,
-              );
-            },
-            routerConfig: router,
-          );
-        },
-      ),
+    return DynamicColorBuilder(
+      builder: (lightDynamic, darkDynamic) {
+        final fallbackLight = ColorScheme.fromSeed(
+          seedColor: const Color(0xFF446CB3),
+          brightness: Brightness.light,
+        );
+        final fallbackDark = ColorScheme.fromSeed(
+          seedColor: const Color(0xFF446CB3),
+          brightness: Brightness.dark,
+        );
+        return MaterialApp.router(
+          title: 'FluxEx',
+          debugShowCheckedModeBanner: false,
+          theme: _buildTheme(lightDynamic ?? fallbackLight),
+          darkTheme: _buildTheme(darkDynamic ?? fallbackDark),
+          themeMode: settings.themeMode,
+          builder: (context, child) {
+            return MediaQuery(
+              data: MediaQuery.of(context).copyWith(
+                textScaler: TextScaler.linear(settings.textScale),
+              ),
+              child: child!,
+            );
+          },
+          routerConfig: router,
+        );
+      },
     );
   }
 }

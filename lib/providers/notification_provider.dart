@@ -3,8 +3,10 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'api_client.dart';
 
 class UnreadCountNotifier extends StateNotifier<int> {
-  UnreadCountNotifier() : super(0) {
-    _startPolling();
+  UnreadCountNotifier({bool enablePolling = true}) : super(0) {
+    if (enablePolling) {
+      _startPolling();
+    }
   }
 
   Timer? _timer;
