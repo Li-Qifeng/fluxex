@@ -67,15 +67,6 @@ jobs:
           path: ~/.gradle/wrapper/dists
           key: gradle-wrapper-${{ runner.os }}-${{ hashFiles('android/gradle/wrapper/gradle-wrapper.properties') }}
 
-      - name: Preload Gradle wrapper
-        if: startsWith(matrix.platform, 'android')
-        run: |
-          for attempt in 1 2 3; do
-            (cd android && ./gradlew --version) && break
-            if [ "$attempt" = "3" ]; then exit 1; fi
-            sleep $((attempt * 10))
-          done
-
       - name: Setup Android Signing
         if: startsWith(matrix.platform, 'android')
         run: |
@@ -94,7 +85,11 @@ jobs:
       - name: Build Android
         if: startsWith(matrix.platform, 'android')
         run: |
-          flutter build apk --release --target-platform ${{ matrix.flutter-target }}
+          for attempt in 1 2 3; do
+            flutter build apk --release --target-platform ${{ matrix.flutter-target }} && break
+            if [ "$attempt" = "3" ]; then exit 1; fi
+            sleep $((attempt * 20))
+          done
           mkdir -p dist
           mv build/app/outputs/flutter-apk/app-release.apk dist/fluxex-${{ matrix.arch }}.apk
 
