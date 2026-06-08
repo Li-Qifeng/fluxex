@@ -1,8 +1,12 @@
 <svg version="1.2" baseProfile="tiny-ps" width="1024" height="1024" viewBox="0 0 1024 1024" xmlns="http://www.w3.org/2000/svg">
   <title>FluxEx</title>
-  <circle cx="512" cy="512" r="512" fill="#1C1C1E"/>
-  <path fill="#F0F0F3" d="M255 306c0-44.2 35.8-80 80-80h354c44.2 0 80 35.8 80 80v252c0 44.2-35.8 80-80 80H457L337 758c-19 19-52.5 5.5-52.5-21.2V638H335c-44.2 0-80-35.8-80-80V306z"/>
-  <path fill="#1C1C1E" d="M347 349h154l-72 162h89l-139 178 42-132h-95l21-208z"/>
-  <path fill="#FFB003" d="M577 349h116c22.1 0 40 17.9 40 40v98c0 22.1-17.9 40-40 40H577c-22.1 0-40-17.9-40-40v-98c0-22.1 17.9-40 40-40z"/>
-  <path fill="#1C1C1E" d="M584 393h144v35H584v-35zm0 67h96v35h-96v-35z" opacity="0.88"/>
+  <defs>
+    <linearGradient id="g2" x1="110" y1="80" x2="900" y2="940"><stop stop-color="#eaf2ff"/><stop offset="1" stop-color="#9eb5d9"/></linearGradient>
+    <linearGradient id="a2" x1="560" y1="320" x2="820" y2="560"><stop stop-color="#ffcf5a"/><stop offset="1" stop-color="#ff8f1f"/></linearGradient>
+  </defs>
+  <rect width="1024" height="1024" rx="226" fill="url(#g2)"/>
+  <path fill="#22314a" d="M178 235c0-55 45-100 100-100h468c55 0 100 45 100 100v334c0 55-45 100-100 100H462L314 817c-24 24-66 7-66-27v-121c-39-12-70-49-70-92V235z"/>
+  <path fill="#F5F8FF" d="M306 297h205l-95 216h118L348 751l57-176H278l28-278z"/>
+  <path fill="url(#a2)" d="M604 297h150c31 0 56 25 56 56v128c0 31-25 56-56 56H604c-31 0-56-25-56-56V353c0-31 25-56 56-56z"/>
+  <path fill="#22314a" d="M617 359h174v42H617v-42zm0 81h118v42H617v-42z" opacity=".9"/>
 </svg>

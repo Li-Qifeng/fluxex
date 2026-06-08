@@ -6,10 +6,12 @@ import zlib
 from pathlib import Path
 
 ROOT = Path(__file__).resolve().parents[1]
-BG = (28, 28, 30, 255)
-FG = (240, 240, 243, 255)
-ACCENT = (255, 176, 3, 255)
-DARK = (28, 28, 30, 255)
+BG_START = (234, 242, 255, 255)
+BG_END = (158, 181, 217, 255)
+ACCENT_START = (255, 207, 90, 255)
+ACCENT_END = (255, 143, 31, 255)
+BUBBLE = (34, 49, 74, 255)
+FG = (245, 248, 255, 255)
 TRANSPARENT = (0, 0, 0, 0)
 
 
@@ -23,6 +25,15 @@ def blend(dst, src):
         int((src[i] * sa + dst[i] * da * (1 - sa)) / out_a + 0.5)
         for i in range(3)
     ) + (int(out_a * 255 + 0.5),)
+
+
+def gradient(x, y, start, end, p1, p2):
+    x1, y1 = p1
+    x2, y2 = p2
+    dx, dy = x2 - x1, y2 - y1
+    t = ((x - x1) * dx + (y - y1) * dy) / (dx * dx + dy * dy)
+    t = max(0, min(1, t))
+    return tuple(int(start[i] + (end[i] - start[i]) * t + 0.5) for i in range(4))
 
 
 def write_png(path, width, height, pixels):
@@ -72,24 +83,23 @@ def rounded_rect(x, y, left, top, right, bottom, radius):
 def logo_pixel(px, py, size):
     scale = size / 1024
     x, y = px / scale, py / scale
-    cx, cy = 512, 512
-    if (x - cx) ** 2 + (y - cy) ** 2 > 512 ** 2:
-        return TRANSPARENT
+    color = TRANSPARENT
+    if rounded_rect(x, y, 0, 0, 1024, 1024, 226):
+        color = gradient(x, y, BG_START, BG_END, (110, 80), (900, 940))
 
-    color = BG
-    bubble = rounded_rect(x, y, 255, 226, 769, 638, 80)
-    tail = point_in_poly(x, y, [(343, 624), (337, 758), (470, 638)])
+    bubble = rounded_rect(x, y, 178, 135, 846, 669, 100)
+    tail = point_in_poly(x, y, [(314, 817), (248, 669), (434, 669)])
     if bubble or tail:
+        color = BUBBLE
+
+    bolt = [(306, 297), (511, 297), (416, 513), (534, 513), (348, 751), (405, 575), (278, 575)]
+    if point_in_poly(x, y, bolt):
         color = FG
 
-    bolt = [(347, 349), (501, 349), (429, 511), (518, 511), (379, 689), (421, 557), (326, 557)]
-    if point_in_poly(x, y, bolt):
-        color = DARK
-
-    if rounded_rect(x, y, 537, 349, 733, 527, 40):
-        color = ACCENT
-    if rounded_rect(x, y, 584, 393, 728, 428, 0) or rounded_rect(x, y, 584, 460, 680, 495, 0):
-        color = DARK
+    if rounded_rect(x, y, 548, 297, 810, 537, 56):
+        color = gradient(x, y, ACCENT_START, ACCENT_END, (560, 320), (820, 560))
+    if rounded_rect(x, y, 617, 359, 791, 401, 0) or rounded_rect(x, y, 617, 440, 735, 482, 0):
+        color = BUBBLE
     return color
 
 
