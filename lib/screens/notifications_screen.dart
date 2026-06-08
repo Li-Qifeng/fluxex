@@ -4,11 +4,38 @@ import 'package:url_launcher/url_launcher.dart';
 import '../providers/notification_provider.dart';
 import '../providers/notifications_provider.dart';
 
-class NotificationsScreen extends ConsumerWidget {
+class NotificationsScreen extends ConsumerStatefulWidget {
   const NotificationsScreen({super.key});
 
   @override
-  Widget build(BuildContext context, WidgetRef ref) {
+  ConsumerState<NotificationsScreen> createState() => _NotificationsScreenState();
+}
+
+class _NotificationsScreenState extends ConsumerState<NotificationsScreen> {
+  @override
+  void initState() {
+    super.initState();
+    Future.microtask(() {
+      ref.read(unreadCountProvider.notifier).refresh();
+    });
+  }
+
+  Future<void> _openAndRefresh(String href) async {
+    final uri = Uri.parse(
+      href.startsWith('http') ? href : 'https://www.v2ex.com$href',
+    );
+    if (await canLaunchUrl(uri)) {
+      await launchUrl(uri, mode: LaunchMode.externalApplication);
+    }
+    // 延迟 3s 刷新未读数，给用户回 App 的时间
+    await Future.delayed(const Duration(seconds: 3));
+    if (mounted) {
+      ref.read(unreadCountProvider.notifier).refresh();
+    }
+  }
+
+  @override
+  Widget build(BuildContext context) {
     final async = ref.watch(notificationsProvider);
 
     return Scaffold(
@@ -74,15 +101,10 @@ class NotificationsScreen extends ConsumerWidget {
                         ),
                       )
                     : null,
-                onTap: () async {
+                onTap: () {
                   final href = item.href;
                   if (href != null) {
-                    final uri = Uri.parse(
-                      href.startsWith('http') ? href : 'https://www.v2ex.com$href',
-                    );
-                    if (await canLaunchUrl(uri)) {
-                      await launchUrl(uri, mode: LaunchMode.externalApplication);
-                    }
+                    _openAndRefresh(href);
                   }
                 },
               );
