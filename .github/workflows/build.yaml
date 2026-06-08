@@ -58,6 +58,23 @@ jobs:
         with:
           distribution: temurin
           java-version: '17'
+          cache: gradle
+
+      - name: Cache Gradle wrapper
+        if: startsWith(matrix.platform, 'android')
+        uses: actions/cache@v4
+        with:
+          path: ~/.gradle/wrapper/dists
+          key: gradle-wrapper-${{ runner.os }}-${{ hashFiles('android/gradle/wrapper/gradle-wrapper.properties') }}
+
+      - name: Preload Gradle wrapper
+        if: startsWith(matrix.platform, 'android')
+        run: |
+          for attempt in 1 2 3; do
+            (cd android && ./gradlew --version) && break
+            if [ "$attempt" = "3" ]; then exit 1; fi
+            sleep $((attempt * 10))
+          done
 
       - name: Setup Android Signing
         if: startsWith(matrix.platform, 'android')
