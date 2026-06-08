@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import '../providers/api_client.dart';
+import '../utils/app_toast.dart';
 
 class ReplyBottomSheet extends ConsumerStatefulWidget {
   final int topicId;
@@ -33,9 +34,7 @@ class _ReplyBottomSheetState extends ConsumerState<ReplyBottomSheet> {
       }
     } catch (e) {
       if (mounted) {
-        ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(content: Text('回复失败: $e')),
-        );
+        AppToast.error(context, '回复失败: $e');
       }
     } finally {
       if (mounted) setState(() => _sending = false);

@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 import '../providers/node_provider.dart';
+import '../widgets/state_widgets.dart';
 
 class NodesScreen extends ConsumerStatefulWidget {
   const NodesScreen({super.key});
@@ -44,7 +45,7 @@ class _NodesScreenState extends ConsumerState<NodesScreen> {
                   n.titleAlternative.toLowerCase().contains(_searchQuery)).toList();
 
           if (filtered.isEmpty) {
-            return const Center(child: Text('未找到匹配的节点'));
+            return const EmptyState(message: '未找到匹配的节点');
           }
 
           return ListView.builder(
@@ -82,19 +83,10 @@ class _NodesScreenState extends ConsumerState<NodesScreen> {
             },
           );
         },
-        loading: () => const Center(child: CircularProgressIndicator()),
-        error: (err, _) => Center(
-          child: Column(
-            mainAxisAlignment: MainAxisAlignment.center,
-            children: [
-              Text('加载失败: $err'),
-              const SizedBox(height: 12),
-              FilledButton(
-                onPressed: () => ref.invalidate(allNodesProvider),
-                child: const Text('重试'),
-              ),
-            ],
-          ),
+        loading: () => const LoadingState(),
+        error: (err, _) => ErrorState(
+          message: '加载失败: $err',
+          onRetry: () => ref.invalidate(allNodesProvider),
         ),
       ),
     );

@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 import '../providers/search_provider.dart';
+import '../widgets/state_widgets.dart';
 
 class SearchScreen extends ConsumerStatefulWidget {
   const SearchScreen({super.key});
@@ -44,11 +45,11 @@ class _SearchScreenState extends ConsumerState<SearchScreen> {
         centerTitle: true,
       ),
       body: resultsAsync == null
-          ? const Center(child: Text('输入关键词开始搜索'))
+          ? const EmptyState(message: '输入关键词开始搜索')
           : resultsAsync.when(
               data: (results) {
                 if (results.isEmpty) {
-                  return const Center(child: Text('未找到相关话题'));
+                  return const EmptyState(message: '未找到相关话题');
                 }
                 return ListView.builder(
                   itemCount: results.length,
@@ -134,19 +135,10 @@ class _SearchScreenState extends ConsumerState<SearchScreen> {
                   },
                 );
               },
-              loading: () => const Center(child: CircularProgressIndicator()),
-              error: (err, _) => Center(
-                child: Column(
-                  mainAxisAlignment: MainAxisAlignment.center,
-                  children: [
-                    Text('搜索失败: $err'),
-                    const SizedBox(height: 12),
-                    FilledButton(
-                      onPressed: () => ref.invalidate(searchProvider(_query)),
-                      child: const Text('重试'),
-                    ),
-                  ],
-                ),
+              loading: () => const LoadingState(),
+              error: (err, _) => ErrorState(
+                message: '搜索失败: $err',
+                onRetry: () => ref.invalidate(searchProvider(_query)),
               ),
             ),
     );

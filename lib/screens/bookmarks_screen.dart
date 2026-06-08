@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 import '../utils/db_helper.dart';
+import '../widgets/state_widgets.dart';
 
 final bookmarksProvider = FutureProvider<List<Map<String, dynamic>>>((ref) async {
   return DbHelper.getBookmarks();
@@ -22,7 +23,7 @@ class BookmarksScreen extends ConsumerWidget {
       body: async.when(
         data: (items) {
           if (items.isEmpty) {
-            return const Center(child: Text('暂无书签'));
+            return const EmptyState(message: '暂无书签');
           }
           return ListView.builder(
             itemCount: items.length,
@@ -45,8 +46,11 @@ class BookmarksScreen extends ConsumerWidget {
             },
           );
         },
-        loading: () => const Center(child: CircularProgressIndicator()),
-        error: (err, _) => Center(child: Text('加载失败: $err')),
+        loading: () => const LoadingState(),
+        error: (err, _) => ErrorState(
+          message: '加载失败: $err',
+          onRetry: () => ref.invalidate(bookmarksProvider),
+        ),
       ),
     );
   }

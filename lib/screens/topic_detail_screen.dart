@@ -2,10 +2,13 @@ import 'dart:async';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:url_launcher/url_launcher.dart';
+import '../models/reply.dart';
 import '../providers/topic_detail_provider.dart';
+import '../utils/app_toast.dart';
 import '../utils/db_helper.dart';
 import '../widgets/reply_bottom_sheet.dart';
 import '../widgets/shimmer_skeleton.dart';
+import '../widgets/state_widgets.dart';
 import '../widgets/topic_header.dart';
 import '../widgets/reply_item.dart';
 
@@ -20,15 +23,27 @@ class TopicDetailScreen extends ConsumerStatefulWidget {
 
 class _TopicDetailScreenState extends ConsumerState<TopicDetailScreen> {
   final ScrollController _scrollController = ScrollController();
+  final TextEditingController _searchController = TextEditingController();
   int _currentFloor = 0;
   int _totalReplies = 0;
   Timer? _saveTimer;
+  bool _isSearching = false;
+  String _searchQuery = '';
 
   @override
   void initState() {
     super.initState();
     _scrollController.addListener(_onScroll);
     _restorePosition();
+  }
+
+  @override
+  void dispose() {
+    _scrollController.removeListener(_onScroll);
+    _scrollController.dispose();
+    _searchController.dispose();
+    _saveTimer?.cancel();
+    super.dispose();
   }
 
   Future<void> _restorePosition() async {
@@ -41,7 +56,13 @@ class _TopicDetailScreenState extends ConsumerState<TopicDetailScreen> {
     final messenger = ScaffoldMessenger.of(context);
     messenger.showSnackBar(
       SnackBar(
-        content: Text('上次阅读到第 $floor 楼'),
+        content: Row(
+          children: [
+            const Icon(Icons.bookmark_added, size: 18),
+            const SizedBox(width: 8),
+            Text('上次阅读到第 $floor 楼'),
+          ],
+        ),
         action: SnackBarAction(
           label: '跳转',
           onPressed: () => _jumpToFloor(floor),
@@ -51,16 +72,8 @@ class _TopicDetailScreenState extends ConsumerState<TopicDetailScreen> {
     );
   }
 
-  @override
-  void dispose() {
-    _scrollController.removeListener(_onScroll);
-    _scrollController.dispose();
-    _saveTimer?.cancel();
-    super.dispose();
-  }
-
   void _onScroll() {
-    if (!mounted || _totalReplies == 0) return;
+    if (!mounted || _totalReplies == 0 || _isSearching) return;
     const headerEstimate = 300.0;
     const itemEstimate = 120.0;
     final offset = _scrollController.offset;
@@ -134,13 +147,28 @@ class _TopicDetailScreenState extends ConsumerState<TopicDetailScreen> {
       if (floor >= 1 && floor <= _totalReplies) {
         await _jumpToFloor(floor);
       } else if (mounted) {
-        ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(content: Text('请输入 1~$_totalReplies 的有效楼层')),
-        );
+        AppToast.error(context, '请输入 1~$_totalReplies 的有效楼层');
       }
     } else {
       controller.dispose();
     }
+  }
+
+  List<({Reply reply, int floor})> _filterReplies(List<dynamic> replies) {
+    if (_searchQuery.isEmpty) {
+      return replies.indexed.map((e) => (reply: e.$2 as Reply, floor: e.$1 + 1)).toList();
+    }
+    final query = _searchQuery.toLowerCase();
+    final result = <({Reply reply, int floor})>[];
+    for (var i = 0; i < replies.length; i++) {
+      final r = replies[i] as Reply;
+      final content = (r.contentRendered ?? r.content ?? '').toLowerCase();
+      if (r.member.username.toLowerCase().contains(query) ||
+          content.contains(query)) {
+        result.add((reply: r, floor: i + 1));
+      }
+    }
+    return result;
   }
 
   @override
@@ -150,42 +178,78 @@ class _TopicDetailScreenState extends ConsumerState<TopicDetailScreen> {
 
     return Scaffold(
       appBar: AppBar(
-        title: const Text('话题详情'),
-        centerTitle: true,
+        title: _isSearching
+            ? TextField(
+                controller: _searchController,
+                autofocus: true,
+                decoration: InputDecoration(
+                  hintText: '搜索回复内容或用户名...',
+                  border: InputBorder.none,
+                  hintStyle: TextStyle(
+                    color: Theme.of(context).colorScheme.outline,
+                  ),
+                ),
+                style: Theme.of(context).textTheme.titleMedium,
+                onChanged: (value) => setState(() => _searchQuery = value.trim()),
+              )
+            : const Text('话题详情'),
+        centerTitle: !_isSearching,
+        leading: _isSearching
+            ? IconButton(
+                icon: const Icon(Icons.arrow_back),
+                onPressed: () {
+                  setState(() {
+                    _isSearching = false;
+                    _searchQuery = '';
+                    _searchController.clear();
+                  });
+                },
+              )
+            : null,
         actions: [
-          IconButton(
-            icon: const Icon(Icons.bookmark_border),
-            tooltip: '收藏',
-            onPressed: () async {
-              final topic = await ref.read(topicDetailProvider(widget.topicId).future);
-              final isBookmarked = await DbHelper.isBookmarked(widget.topicId);
-              if (isBookmarked) {
-                await DbHelper.removeBookmark(widget.topicId);
-                if (context.mounted) {
-                  ScaffoldMessenger.of(context).showSnackBar(
-                    const SnackBar(content: Text('已取消收藏')),
-                  );
+          if (!_isSearching) ...[
+            IconButton(
+              icon: const Icon(Icons.search),
+              tooltip: '搜索回复',
+              onPressed: () => setState(() => _isSearching = true),
+            ),
+            IconButton(
+              icon: const Icon(Icons.bookmark_border),
+              tooltip: '收藏',
+              onPressed: () async {
+                final topic = await ref.read(topicDetailProvider(widget.topicId).future);
+                final isBookmarked = await DbHelper.isBookmarked(widget.topicId);
+                if (isBookmarked) {
+                  await DbHelper.removeBookmark(widget.topicId);
+                  if (context.mounted) {
+                    AppToast.info(context, '已取消收藏');
+                  }
+                } else {
+                  await DbHelper.addBookmark(widget.topicId, topic.title);
+                  if (context.mounted) {
+                    AppToast.success(context, '已收藏');
+                  }
                 }
-              } else {
-                await DbHelper.addBookmark(widget.topicId, topic.title);
-                if (context.mounted) {
-                  ScaffoldMessenger.of(context).showSnackBar(
-                    const SnackBar(content: Text('已收藏')),
-                  );
+              },
+            ),
+            IconButton(
+              icon: const Icon(Icons.open_in_browser),
+              tooltip: '在网页中打开',
+              onPressed: () async {
+                final url = Uri.parse('https://www.v2ex.com/t/${widget.topicId}');
+                if (await canLaunchUrl(url)) {
+                  await launchUrl(url, mode: LaunchMode.externalApplication);
                 }
-              }
-            },
-          ),
-          IconButton(
-            icon: const Icon(Icons.open_in_browser),
-            tooltip: '在网页中打开',
-            onPressed: () async {
-              final url = Uri.parse('https://www.v2ex.com/t/${widget.topicId}');
-              if (await canLaunchUrl(url)) {
-                await launchUrl(url, mode: LaunchMode.externalApplication);
-              }
-            },
-          ),
+              },
+            ),
+          ] else if (_searchController.text.isNotEmpty)
+            IconButton(
+              icon: const Icon(Icons.clear),
+              onPressed: () {
+                _searchController.clear();
+                setState(() => _searchQuery = '');
+              },
+            ),
         ],
       ),
       body: topicAsync.when(
@@ -214,35 +278,30 @@ class _TopicDetailScreenState extends ConsumerState<TopicDetailScreen> {
                   data: (replies) {
                     if (replies.isEmpty) {
                       return const SliverToBoxAdapter(
-                        child: Padding(
-                          padding: EdgeInsets.all(32),
-                          child: Center(
-                            child: Text(
-                              '暂无回复',
-                              style: TextStyle(color: Colors.grey),
-                            ),
-                          ),
-                        ),
+                        child: EmptyState(message: '暂无回复'),
+                      );
+                    }
+                    final filtered = _filterReplies(replies);
+                    if (filtered.isEmpty && _searchQuery.isNotEmpty) {
+                      return const SliverToBoxAdapter(
+                        child: EmptyState(message: '未找到匹配的回复'),
                       );
                     }
                     return SliverList.builder(
-                      itemCount: replies.length,
+                      itemCount: filtered.length,
                       itemBuilder: (context, index) => ReplyItem(
-                        reply: replies[index],
-                        floor: index + 1,
+                        reply: filtered[index].reply,
+                        floor: filtered[index].floor,
                       ),
                     );
                   },
                   loading: () => const SliverToBoxAdapter(
-                    child: Padding(
-                      padding: EdgeInsets.all(32),
-                      child: Center(child: CircularProgressIndicator()),
-                    ),
+                    child: LoadingState(),
                   ),
                   error: (err, stack) => SliverToBoxAdapter(
-                    child: Padding(
-                      padding: const EdgeInsets.all(32),
-                      child: Center(child: Text('回复加载失败: $err')),
+                    child: ErrorState(
+                      message: '回复加载失败: $err',
+                      onRetry: () => ref.invalidate(topicRepliesProvider(widget.topicId)),
                     ),
                   ),
                 ),
@@ -252,20 +311,9 @@ class _TopicDetailScreenState extends ConsumerState<TopicDetailScreen> {
           );
         },
         loading: () => const TopicDetailSkeleton(),
-        error: (err, stack) => Center(
-          child: Column(
-            mainAxisAlignment: MainAxisAlignment.center,
-            children: [
-              Icon(Icons.error_outline, size: 48, color: Theme.of(context).colorScheme.error),
-              const SizedBox(height: 12),
-              Text('话题加载失败: $err'),
-              const SizedBox(height: 12),
-              FilledButton(
-                onPressed: () => ref.invalidate(topicDetailProvider(widget.topicId)),
-                child: const Text('重试'),
-              ),
-            ],
-          ),
+        error: (err, stack) => ErrorState(
+          message: '话题加载失败: $err',
+          onRetry: () => ref.invalidate(topicDetailProvider(widget.topicId)),
         ),
       ),
       floatingActionButton: Stack(
@@ -289,17 +337,15 @@ class _TopicDetailScreenState extends ConsumerState<TopicDetailScreen> {
                 if (result == true) {
                   ref.invalidate(topicRepliesProvider(widget.topicId));
                   if (mounted) {
-                    ScaffoldMessenger.of(context).showSnackBar(
-                      const SnackBar(content: Text('回复成功')),
-                    );
+                    AppToast.success(context, '回复成功');
                   }
                 }
               },
               child: const Icon(Icons.reply),
             ),
           ),
-          // 楼层进度胶囊
-          if (_totalReplies > 0)
+          // 楼层进度胶囊（搜索时隐藏）
+          if (_totalReplies > 0 && !_isSearching)
             Positioned(
               bottom: 88,
               right: 16,

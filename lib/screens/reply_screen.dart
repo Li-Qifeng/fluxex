@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import '../providers/api_client.dart';
+import '../utils/app_toast.dart';
 
 class ReplyScreen extends ConsumerStatefulWidget {
   final int topicId;
@@ -29,16 +30,12 @@ class _ReplyScreenState extends ConsumerState<ReplyScreen> {
       final api = V2exApiClient();
       await api.replyTopic(widget.topicId, content);
       if (mounted) {
-        ScaffoldMessenger.of(context).showSnackBar(
-          const SnackBar(content: Text('回复成功')),
-        );
+        AppToast.success(context, '回复成功');
         Navigator.of(context).pop(true);
       }
     } catch (e) {
       if (mounted) {
-        ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(content: Text('回复失败: $e')),
-        );
+        AppToast.error(context, '回复失败: $e');
       }
     } finally {
       if (mounted) setState(() => _sending = false);

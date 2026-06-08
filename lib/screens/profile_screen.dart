@@ -5,6 +5,7 @@ import 'package:url_launcher/url_launcher.dart';
 import '../providers/auth_provider.dart';
 import '../providers/notification_provider.dart';
 import '../providers/update_provider.dart';
+import '../utils/app_toast.dart';
 
 class ProfileScreen extends ConsumerStatefulWidget {
   const ProfileScreen({super.key});
@@ -96,9 +97,7 @@ class _ProfileScreenState extends ConsumerState<ProfileScreen> {
                       final value = _cookieController.text.trim();
                       if (value.isNotEmpty) {
                         ref.read(authProvider.notifier).setA2Cookie(value);
-                        ScaffoldMessenger.of(context).showSnackBar(
-                          const SnackBar(content: Text('Cookie 已保存')),
-                        );
+                        AppToast.success(context, 'Cookie 已保存');
                         setState(() => _showInput = false);
                       }
                     },

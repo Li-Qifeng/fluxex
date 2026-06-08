@@ -94,7 +94,7 @@ class TopicHeader extends StatelessWidget {
                 ),
                 customStylesBuilder: codeBlockStylesBuilder,
                 onTapUrl: (url) {
-                  showUrlOptions(context, url);
+                  handleTapUrl(context, url);
                   return true;
                 },
               ),

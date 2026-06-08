@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import '../models/topic_list_result.dart';
 import '../providers/topic_list_provider.dart';
+import '../widgets/state_widgets.dart';
 import '../widgets/topic_card.dart';
 import '../widgets/scroll_bottom_detector.dart';
 
@@ -18,21 +19,7 @@ class HomeScreen extends ConsumerWidget {
       return asyncValue.when(
         data: (result) {
           if (result.topics.isEmpty) {
-            return Center(
-              child: Column(
-                mainAxisAlignment: MainAxisAlignment.center,
-                children: [
-                  Icon(Icons.inbox_outlined, size: 48, color: Theme.of(context).colorScheme.outline),
-                  const SizedBox(height: 12),
-                  const Text('暂无内容'),
-                  const SizedBox(height: 12),
-                  FilledButton(
-                    onPressed: onRefresh,
-                    child: const Text('刷新'),
-                  ),
-                ],
-              ),
-            );
+            return EmptyState(onRetry: onRefresh);
           }
           return ListView.builder(
             itemCount: result.topics.length + (result.fromCache ? 1 : 0) + 1,
@@ -79,21 +66,10 @@ class HomeScreen extends ConsumerWidget {
             },
           );
         },
-        loading: () => const Center(child: CircularProgressIndicator()),
-        error: (err, stack) => Center(
-          child: Column(
-            mainAxisAlignment: MainAxisAlignment.center,
-            children: [
-              Icon(Icons.error_outline, size: 48, color: Theme.of(context).colorScheme.error),
-              const SizedBox(height: 12),
-              Text('加载失败: $err'),
-              const SizedBox(height: 12),
-              FilledButton(
-                onPressed: onRefresh,
-                child: const Text('重试'),
-              ),
-            ],
-          ),
+        loading: () => const LoadingState(),
+        error: (err, stack) => ErrorState(
+          message: '加载失败: $err',
+          onRetry: onRefresh,
         ),
       );
     }
