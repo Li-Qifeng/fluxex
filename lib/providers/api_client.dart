@@ -17,7 +17,7 @@ class V2exApiClient {
       connectTimeout: const Duration(seconds: 10),
       receiveTimeout: const Duration(seconds: 10),
       headers: {
-        'User-Agent': 'V2exClient/0.1.0 (Flutter; Linux; Like Fluxdo)',
+        'User-Agent': 'FluxEx/0.1.3 (Flutter; Cross-platform; V2EX)',
         'Accept': 'application/json',
       },
     ));
