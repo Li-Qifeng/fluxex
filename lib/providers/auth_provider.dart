@@ -1,5 +1,5 @@
 import 'package:flutter_riverpod/flutter_riverpod.dart';
-import 'package:shared_preferences/shared_preferences.dart';
+import 'package:flutter_secure_storage/flutter_secure_storage.dart';
 import 'package:cookie_jar/cookie_jar.dart';
 import 'package:dio_cookie_manager/dio_cookie_manager.dart';
 import 'api_client.dart';
@@ -21,13 +21,14 @@ class AuthState {
 }
 
 class AuthNotifier extends StateNotifier<AuthState> {
+  final _secure = const FlutterSecureStorage();
+
   AuthNotifier() : super(AuthState(isLoggedIn: false)) {
     _loadPersistedCookie();
   }
 
   Future<void> _loadPersistedCookie() async {
-    final prefs = await SharedPreferences.getInstance();
-    final a2 = prefs.getString(_a2Key);
+    final a2 = await _secure.read(key: _a2Key);
     if (a2 != null && a2.isNotEmpty) {
       await _injectA2(a2);
       state = state.copyWith(isLoggedIn: true);
@@ -47,15 +48,13 @@ class AuthNotifier extends StateNotifier<AuthState> {
   }
 
   Future<void> setA2Cookie(String a2Value) async {
-    final prefs = await SharedPreferences.getInstance();
-    await prefs.setString(_a2Key, a2Value);
+    await _secure.write(key: _a2Key, value: a2Value);
     await _injectA2(a2Value);
     state = state.copyWith(isLoggedIn: true);
   }
 
   Future<void> clearA2Cookie() async {
-    final prefs = await SharedPreferences.getInstance();
-    await prefs.remove(_a2Key);
+    await _secure.delete(key: _a2Key);
   }
 
   Future<void> logout() async {
@@ -65,8 +64,7 @@ class AuthNotifier extends StateNotifier<AuthState> {
         .first
         .cookieJar
         .delete(Uri.parse('https://www.v2ex.com'));
-    final prefs = await SharedPreferences.getInstance();
-    await prefs.remove(_a2Key);
+    await _secure.delete(key: _a2Key);
     state = AuthState(isLoggedIn: false);
   }
 }
