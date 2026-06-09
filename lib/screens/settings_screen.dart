@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:package_info_plus/package_info_plus.dart';
 import '../providers/settings_provider.dart';
 import '../utils/app_toast.dart';
 import '../utils/db_helper.dart';
@@ -126,14 +127,22 @@ class SettingsScreen extends ConsumerWidget {
           ),
           const SizedBox(height: 24),
           // 关于
-          Center(
-            child: Text(
-              'FluxEx v0.1.7',
-              style: TextStyle(
-                fontSize: 13,
-                color: cs.outline,
-              ),
-            ),
+          FutureBuilder<PackageInfo>(
+            future: PackageInfo.fromPlatform(),
+            builder: (context, snapshot) {
+              final version = snapshot.data?.version ?? '';
+              final build = snapshot.data?.buildNumber ?? '';
+              final label = version.isNotEmpty ? 'FluxEx v$version${build.isNotEmpty ? '+$build' : ''}' : 'FluxEx';
+              return Center(
+                child: Text(
+                  label,
+                  style: TextStyle(
+                    fontSize: 13,
+                    color: cs.outline,
+                  ),
+                ),
+              );
+            },
           ),
           const SizedBox(height: 32),
         ],
