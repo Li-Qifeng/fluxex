@@ -1,6 +1,8 @@
 import 'package:flutter/material.dart';
+import 'package:flutter/services.dart';
 import 'package:go_router/go_router.dart';
 import 'package:intl/intl.dart';
+import 'package:share_plus/share_plus.dart';
 import '../models/topic.dart';
 import '../utils/db_helper.dart';
 import '../widgets/cached_avatar.dart';
@@ -41,6 +43,7 @@ class TopicCard extends StatelessWidget {
           child: InkWell(
             borderRadius: BorderRadius.circular(12),
             onTap: () => context.push('/topic/${topic.id}'),
+            onLongPress: () => _showTopicMenu(context, topic),
             child: Padding(
               padding: const EdgeInsets.all(14),
               child: Column(
@@ -135,4 +138,90 @@ class TopicCard extends StatelessWidget {
       },
     );
   }
+}
+
+void _showTopicMenu(BuildContext context, Topic topic) {
+  showModalBottomSheet(
+    context: context,
+    builder: (ctx) => SafeArea(
+      child: FutureBuilder<bool>(
+        future: DbHelper.isBookmarked(topic.id),
+        builder: (context, snapshot) {
+          final isBookmarked = snapshot.data ?? false;
+          return Column(
+            mainAxisSize: MainAxisSize.min,
+            children: [
+              Container(
+                margin: const EdgeInsets.only(top: 8, bottom: 4),
+                width: 36,
+                height: 4,
+                decoration: BoxDecoration(
+                  color: Theme.of(context).colorScheme.outline.withOpacity(0.4),
+                  borderRadius: BorderRadius.circular(2),
+                ),
+              ),
+              ListTile(
+                leading: const Icon(Icons.open_in_new),
+                title: const Text('查看话题'),
+                onTap: () {
+                  Navigator.pop(context);
+                  context.push('/topic/${topic.id}');
+                },
+              ),
+              ListTile(
+                leading: Icon(isBookmarked ? Icons.bookmark : Icons.bookmark_border),
+                title: Text(isBookmarked ? '取消收藏' : '收藏话题'),
+                onTap: () async {
+                  Navigator.pop(context);
+                  if (isBookmarked) {
+                    await DbHelper.removeBookmark(topic.id);
+                  } else {
+                    await DbHelper.addBookmark(topic.id, topic.title);
+                  }
+                },
+              ),
+              ListTile(
+                leading: const Icon(Icons.share),
+                title: const Text('分享'),
+                onTap: () {
+                  Navigator.pop(context);
+                  Share.share('${topic.title} https://www.v2ex.com/t/${topic.id}');
+                },
+              ),
+              ListTile(
+                leading: const Icon(Icons.link),
+                title: const Text('复制链接'),
+                onTap: () {
+                  Navigator.pop(context);
+                  Clipboard.setData(ClipboardData(
+                    text: 'https://www.v2ex.com/t/${topic.id}',
+                  ));
+                  ScaffoldMessenger.of(context).showSnackBar(
+                    const SnackBar(content: Text('链接已复制')),
+                  );
+                },
+              ),
+              ListTile(
+                leading: const Icon(Icons.person_outline),
+                title: Text('查看用户: ${topic.member.username}'),
+                onTap: () {
+                  Navigator.pop(context);
+                  context.push('/member/${topic.member.username}');
+                },
+              ),
+              ListTile(
+                leading: const Icon(Icons.folder_outlined),
+                title: Text('查看节点: ${topic.node.title}'),
+                onTap: () {
+                  Navigator.pop(context);
+                  context.push('/node/${topic.node.name}');
+                },
+              ),
+              const SizedBox(height: 8),
+            ],
+          );
+        },
+      ),
+    ),
+  );
 }
