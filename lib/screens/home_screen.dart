@@ -6,6 +6,7 @@ import '../providers/auth_provider.dart';
 import '../providers/topic_list_provider.dart';
 import '../widgets/state_widgets.dart';
 import '../widgets/topic_card.dart';
+import '../widgets/topic_card_shimmer.dart';
 import '../widgets/scroll_bottom_detector.dart';
 
 class HomeScreen extends ConsumerWidget {
@@ -75,7 +76,7 @@ class HomeScreen extends ConsumerWidget {
             },
           );
         },
-        loading: () => const LoadingState(),
+        loading: () => const TopicListShimmer(count: 6),
         error: (err, stack) => ErrorState(
           message: '加载失败: $err',
           onRetry: onRefresh,

@@ -56,67 +56,85 @@ final appRouter = GoRouter(
     GoRoute(
       parentNavigatorKey: _rootNavigatorKey,
       path: '/bookmarks',
-      builder: (context, state) => const BookmarksScreen(),
+      pageBuilder: (context, state) => _slidePage(const BookmarksScreen(), state),
     ),
     GoRoute(
       parentNavigatorKey: _rootNavigatorKey,
       path: '/reply/:id',
-      builder: (context, state) {
+      pageBuilder: (context, state) {
         final id = int.parse(state.pathParameters['id']!);
-        return ReplyScreen(topicId: id);
+        return _slidePage(ReplyScreen(topicId: id), state);
       },
     ),
     GoRoute(
       parentNavigatorKey: _rootNavigatorKey,
       path: '/login',
-      builder: (context, state) => const LoginWebViewScreen(),
+      pageBuilder: (context, state) => _slidePage(const LoginWebViewScreen(), state),
     ),
     GoRoute(
       parentNavigatorKey: _rootNavigatorKey,
       path: '/notifications',
-      builder: (context, state) => const NotificationsScreen(),
+      pageBuilder: (context, state) => _slidePage(const NotificationsScreen(), state),
     ),
     GoRoute(
       parentNavigatorKey: _rootNavigatorKey,
       path: '/topic/:id',
-      builder: (context, state) {
+      pageBuilder: (context, state) {
         final id = int.parse(state.pathParameters['id']!);
-        return TopicDetailScreen(topicId: id);
+        return _slidePage(TopicDetailScreen(topicId: id), state);
       },
     ),
     GoRoute(
       parentNavigatorKey: _rootNavigatorKey,
       path: '/member/:username',
-      builder: (context, state) {
+      pageBuilder: (context, state) {
         final username = state.pathParameters['username']!;
-        return MemberDetailScreen(username: username);
+        return _slidePage(MemberDetailScreen(username: username), state);
       },
     ),
     GoRoute(
       parentNavigatorKey: _rootNavigatorKey,
       path: '/node/:name',
-      builder: (context, state) {
+      pageBuilder: (context, state) {
         final name = state.pathParameters['name']!;
-        return NodeDetailScreen(nodeName: name);
+        return _slidePage(NodeDetailScreen(nodeName: name), state);
       },
     ),
     GoRoute(
       parentNavigatorKey: _rootNavigatorKey,
       path: '/create-topic',
-      builder: (context, state) => const CreateTopicScreen(),
+      pageBuilder: (context, state) => _slidePage(const CreateTopicScreen(), state),
     ),
     GoRoute(
       parentNavigatorKey: _rootNavigatorKey,
       path: '/followed-nodes',
-      builder: (context, state) => const FollowedNodesScreen(),
+      pageBuilder: (context, state) => _slidePage(const FollowedNodesScreen(), state),
     ),
     GoRoute(
       parentNavigatorKey: _rootNavigatorKey,
       path: '/settings',
-      builder: (context, state) => const SettingsScreen(),
+      pageBuilder: (context, state) => _slidePage(const SettingsScreen(), state),
     ),
   ],
 );
+
+CustomTransitionPage _slidePage(Widget child, GoRouterState state) {
+  return CustomTransitionPage(
+    key: state.pageKey,
+    child: child,
+    transitionsBuilder: (context, animation, secondaryAnimation, child) {
+      const begin = Offset(1.0, 0.0);
+      const end = Offset.zero;
+      const curve = Curves.easeInOutCubic;
+      final tween = Tween(begin: begin, end: end).chain(CurveTween(curve: curve));
+      final offsetAnimation = animation.drive(tween);
+      return SlideTransition(
+        position: offsetAnimation,
+        child: child,
+      );
+    },
+  );
+}
 
 class V2exApp extends ConsumerStatefulWidget {
   const V2exApp({super.key});
