@@ -1,7 +1,10 @@
 import 'package:dynamic_color/dynamic_color.dart';
 import 'package:flutter/material.dart';
+import 'package:flutter/services.dart';
+import 'package:flutter_displaymode/flutter_displaymode.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
+import 'package:google_fonts/google_fonts.dart';
 import 'package:phosphor_flutter/phosphor_flutter.dart';
 import 'providers/notification_provider.dart';
 import 'providers/settings_provider.dart';
@@ -115,11 +118,30 @@ final appRouter = GoRouter(
   ],
 );
 
-class V2exApp extends ConsumerWidget {
+class V2exApp extends ConsumerStatefulWidget {
   const V2exApp({super.key});
 
+  @override
+  ConsumerState<V2exApp> createState() => _V2exAppState();
+}
+
+class _V2exAppState extends ConsumerState<V2exApp> {
+  @override
+  void initState() {
+    super.initState();
+    _setHighRefreshRate();
+  }
+
+  Future<void> _setHighRefreshRate() async {
+    try {
+      await FlutterDisplayMode.setHighRefreshRate();
+    } catch (_) {
+      // Ignore on non-Android platforms
+    }
+  }
+
   ThemeData _buildTheme(ColorScheme colorScheme) {
-    return ThemeData(
+    final base = ThemeData(
       colorScheme: colorScheme,
       useMaterial3: true,
       cardTheme: CardTheme(
@@ -134,10 +156,21 @@ class V2exApp extends ConsumerWidget {
         scrolledUnderElevation: 0.5,
       ),
     );
+    final textTheme = GoogleFonts.notoSansTextTheme(base.textTheme);
+    return base.copyWith(
+      textTheme: textTheme,
+      appBarTheme: base.appBarTheme.copyWith(
+        titleTextStyle: GoogleFonts.notoSans(
+          fontSize: 20,
+          fontWeight: FontWeight.w600,
+          color: colorScheme.onSurface,
+        ),
+      ),
+    );
   }
 
   @override
-  Widget build(BuildContext context, WidgetRef ref) {
+  Widget build(BuildContext context) {
     final settings = ref.watch(settingsProvider);
 
     return DynamicColorBuilder(

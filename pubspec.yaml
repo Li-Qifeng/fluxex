@@ -34,7 +34,8 @@ dependencies:
   cross_file: ^0.3.4+2
   phosphor_flutter: ^2.1.0
   emoji_picker_flutter: 4.0.0
-  google_fonts: ^6.0.0
+  google_fonts: ^6.2.1
+  flutter_displaymode: ^0.6.0
 
 dev_dependencies:
   flutter_test:
