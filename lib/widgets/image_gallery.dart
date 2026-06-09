@@ -1,6 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
-import 'package:url_launcher/url_launcher.dart';
+import 'package:share_plus/share_plus.dart';
 import 'image_viewer.dart';
 
 class ImageGallery extends StatelessWidget {
@@ -35,14 +35,21 @@ class ImageGallery extends StatelessWidget {
               ),
             ),
             ListTile(
-              leading: const Icon(Icons.open_in_browser),
-              title: const Text('浏览器打开'),
-              onTap: () async {
+              leading: const Icon(Icons.save_alt),
+              title: const Text('保存图片'),
+              onTap: () {
                 Navigator.pop(context);
-                final uri = Uri.parse(url);
-                if (await canLaunchUrl(uri)) {
-                  await launchUrl(uri, mode: LaunchMode.externalApplication);
-                }
+                ScaffoldMessenger.of(context).showSnackBar(
+                  const SnackBar(content: Text('长按图片可保存到相册')),
+                );
+              },
+            ),
+            ListTile(
+              leading: const Icon(Icons.share),
+              title: const Text('分享图片'),
+              onTap: () {
+                Navigator.pop(context);
+                Share.share(url);
               },
             ),
             ListTile(
@@ -81,9 +88,11 @@ class ImageGallery extends StatelessWidget {
         Wrap(
           spacing: 8,
           runSpacing: 8,
-          children: urls.map((url) {
+          children: urls.asMap().entries.map((entry) {
+            final index = entry.key;
+            final url = entry.value;
             return GestureDetector(
-              onTap: () => showImageViewer(context, url),
+              onTap: () => showImageViewer(context, urls, initialIndex: index),
               onLongPress: () => _showOptions(context, url),
               child: ClipRRect(
                 borderRadius: BorderRadius.circular(8),

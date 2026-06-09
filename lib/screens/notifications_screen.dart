@@ -14,12 +14,31 @@ class NotificationsScreen extends ConsumerStatefulWidget {
 }
 
 class _NotificationsScreenState extends ConsumerState<NotificationsScreen> {
+  final ScrollController _scrollController = ScrollController();
+
   @override
   void initState() {
     super.initState();
+    _scrollController.addListener(_onScroll);
     Future.microtask(() {
       ref.read(unreadCountProvider.notifier).refresh();
     });
+  }
+
+  @override
+  void dispose() {
+    _scrollController.removeListener(_onScroll);
+    _scrollController.dispose();
+    super.dispose();
+  }
+
+  void _onScroll() {
+    if (!_scrollController.hasClients) return;
+    final threshold = _scrollController.position.maxScrollExtent - 200;
+    if (_scrollController.position.pixels >= threshold) {
+      final notifier = ref.read(paginatedNotificationsProvider.notifier);
+      notifier.loadMore();
+    }
   }
 
   Future<void> _openAndRefresh(String href) async {
@@ -38,7 +57,8 @@ class _NotificationsScreenState extends ConsumerState<NotificationsScreen> {
 
   @override
   Widget build(BuildContext context) {
-    final async = ref.watch(notificationsProvider);
+    final async = ref.watch(paginatedNotificationsProvider);
+    final notifier = ref.watch(paginatedNotificationsProvider.notifier);
 
     return Scaffold(
       appBar: AppBar(
@@ -48,7 +68,7 @@ class _NotificationsScreenState extends ConsumerState<NotificationsScreen> {
           IconButton(
             tooltip: '刷新',
             onPressed: () {
-              ref.invalidate(notificationsProvider);
+              ref.invalidate(paginatedNotificationsProvider);
               ref.read(unreadCountProvider.notifier).refresh();
             },
             icon: const Icon(Icons.refresh),
@@ -81,8 +101,16 @@ class _NotificationsScreenState extends ConsumerState<NotificationsScreen> {
             );
           }
           return ListView.builder(
-            itemCount: items.length,
+            controller: _scrollController,
+            itemCount: items.length + (notifier.hasMore ? 1 : 0),
             itemBuilder: (context, index) {
+              if (index >= items.length) {
+                // Bottom loading indicator
+                return const Padding(
+                  padding: EdgeInsets.symmetric(vertical: 16),
+                  child: Center(child: CircularProgressIndicator()),
+                );
+              }
               final item = items[index];
               return ListTile(
                 leading: item.avatarUrl != null
@@ -138,7 +166,7 @@ class _NotificationsScreenState extends ConsumerState<NotificationsScreen> {
               ),
               const SizedBox(height: 8),
               FilledButton(
-                onPressed: () => ref.invalidate(notificationsProvider),
+                onPressed: () => ref.invalidate(paginatedNotificationsProvider),
                 child: const Text('重试'),
               ),
             ],

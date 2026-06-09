@@ -3,12 +3,16 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:share_plus/share_plus.dart';
 import 'package:url_launcher/url_launcher.dart';
+import 'dart:io';
 import '../models/reply.dart';
 import '../providers/topic_detail_provider.dart';
 import '../utils/app_toast.dart';
+import '../utils/export_utils.dart';
+import '../utils/screenshot_utils.dart';
 import '../utils/db_helper.dart';
 import '../widgets/reply_bottom_sheet.dart';
 import '../widgets/shimmer_skeleton.dart';
+import '../widgets/share_image_widget.dart';
 import '../widgets/state_widgets.dart';
 import '../widgets/topic_header.dart';
 import '../widgets/reply_item.dart';
@@ -35,6 +39,102 @@ class _TopicDetailScreenState extends ConsumerState<TopicDetailScreen> {
   bool _onlyAuthor = false;
   String _searchQuery = '';
   String? _topicAuthor;
+
+  // ── Export / Share helpers ──────────────────────────────────────
+
+  Future<void> _shareImage() async {
+    if (!mounted) return;
+    AppToast.info(context, '正在生成分享图片…');
+    try {
+      final topic =
+          await ref.read(topicDetailProvider(widget.topicId).future);
+      final captureKey = GlobalKey();
+      final isDark =
+          Theme.of(context).brightness == Brightness.dark;
+
+      // Build the share widget in an overlay entry for capture.
+      final overlay = Overlay.of(context);
+      late OverlayEntry entry;
+      entry = OverlayEntry(
+        builder: (_) => Positioned(
+          left: -10000,
+          top: -10000,
+          child: ShareImageWidget(
+            topic: topic,
+            boundaryKey: captureKey,
+            theme: isDark
+                ? ShareImageTheme.dark
+                : ShareImageTheme.light,
+          ),
+        ),
+      );
+      overlay.insert(entry);
+
+      // Wait for the widget to be laid out and painted.
+      await Future.delayed(const Duration(milliseconds: 500));
+
+      final bytes = await captureWidget(captureKey);
+      entry.remove();
+
+      final tempDir = Directory.systemTemp.createTempSync('fluxex_share');
+      final file = File('${tempDir.path}/v2ex_${topic.id}.png');
+      await file.writeAsBytes(bytes);
+
+      if (mounted) {
+        await Share.shareXFiles([XFile(file.path)]);
+      }
+    } catch (e) {
+      if (mounted) {
+        AppToast.error(context, '分享图片生成失败: $e');
+      }
+    }
+  }
+
+  Future<void> _exportMarkdown() async {
+    if (!mounted) return;
+    try {
+      final topic =
+          await ref.read(topicDetailProvider(widget.topicId).future);
+      final replies =
+          await ref.read(topicRepliesProvider(widget.topicId).future);
+      final md = exportAsMarkdown(topic, replies);
+
+      final tempDir = Directory.systemTemp.createTempSync('fluxex_export');
+      final file = File('${tempDir.path}/v2ex_${topic.id}.md');
+      await file.writeAsString(md);
+
+      if (mounted) {
+        await Share.shareXFiles([XFile(file.path)]);
+      }
+    } catch (e) {
+      if (mounted) {
+        AppToast.error(context, '导出 Markdown 失败: $e');
+      }
+    }
+  }
+
+  Future<void> _exportHtml() async {
+    if (!mounted) return;
+    try {
+      final topic =
+          await ref.read(topicDetailProvider(widget.topicId).future);
+      final replies =
+          await ref.read(topicRepliesProvider(widget.topicId).future);
+      final html = exportAsHtml(topic, replies);
+
+      final tempDir = Directory.systemTemp.createTempSync('fluxex_export');
+      final file = File('${tempDir.path}/v2ex_${topic.id}.html');
+      await file.writeAsString(html);
+
+      if (mounted) {
+        await Share.shareXFiles([XFile(file.path)]);
+      }
+    } catch (e) {
+      if (mounted) {
+        AppToast.error(context, '导出 HTML 失败: $e');
+      }
+    }
+  }
 
   @override
   void initState() {
@@ -321,6 +421,52 @@ class _TopicDetailScreenState extends ConsumerState<TopicDetailScreen> {
                 final topic = await ref.read(topicDetailProvider(widget.topicId).future);
                 await Share.share('${topic.title} https://www.v2ex.com/t/${widget.topicId}');
               },
+            ),
+            PopupMenuButton<String>(
+              icon: const Icon(Icons.more_vert),
+              tooltip: '更多',
+              onSelected: (value) {
+                switch (value) {
+                  case 'share_image':
+                    _shareImage();
+                    break;
+                  case 'export_md':
+                    _exportMarkdown();
+                    break;
+                  case 'export_html':
+                    _exportHtml();
+                    break;
+                }
+              },
+              itemBuilder: (_) => const [
+                PopupMenuItem(
+                  value: 'share_image',
+                  child: ListTile(
+                    leading: Icon(Icons.image_outlined),
+                    title: Text('生成分享图片'),
+                    dense: true,
+                    contentPadding: EdgeInsets.zero,
+                  ),
+                ),
+                PopupMenuItem(
+                  value: 'export_md',
+                  child: ListTile(
+                    leading: Icon(Icons.description_outlined),
+                    title: Text('导出 Markdown'),
+                    dense: true,
+                    contentPadding: EdgeInsets.zero,
+                  ),
+                ),
+                PopupMenuItem(
+                  value: 'export_html',
+                  child: ListTile(
+                    leading: Icon(Icons.html_outlined),
+                    title: Text('导出 HTML'),
+                    dense: true,
+                    contentPadding: EdgeInsets.zero,
+                  ),
+                ),
+              ],
             ),
           ] else if (_searchController.text.isNotEmpty)
             IconButton(

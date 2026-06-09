@@ -1,8 +1,10 @@
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
+import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 import 'package:url_launcher/url_launcher.dart';
 import 'app_toast.dart';
+import '../providers/settings_provider.dart';
 
 bool _isImageUrl(String url) {
   final lower = url.toLowerCase();
@@ -92,10 +94,7 @@ Future<void> showUrlOptions(BuildContext context, String url) async {
             title: Text(isImage ? '浏览器打开图片' : '浏览器打开'),
             onTap: () async {
               Navigator.pop(context);
-              final uri = Uri.parse(url);
-              if (await canLaunchUrl(uri)) {
-                await launchUrl(uri, mode: LaunchMode.externalApplication);
-              }
+              await _launchExternalUrl(context, url);
             },
           ),
           ListTile(
@@ -111,5 +110,93 @@ Future<void> showUrlOptions(BuildContext context, String url) async {
         ],
       ),
     ),
+  );
+}
+
+/// Launch an external URL, showing a confirmation dialog first if needed.
+Future<void> _launchExternalUrl(BuildContext context, String url) async {
+  final container = ProviderScope.containerOf(context);
+  final settings = container.read(settingsProvider);
+
+  if (!settings.skipExternalLinkConfirm) {
+    final proceed = await _showExternalLinkConfirmDialog(context, url);
+    if (proceed != true) return;
+  }
+
+  final uri = Uri.parse(url);
+  if (await canLaunchUrl(uri)) {
+    await launchUrl(uri, mode: LaunchMode.externalApplication);
+  }
+}
+
+/// Show a confirmation dialog for opening an external URL.
+/// Returns true if user confirms, false/null otherwise.
+/// Optionally lets user check "Don't ask again".
+Future<bool?> _showExternalLinkConfirmDialog(
+    BuildContext context, String url) async {
+  bool dontAskAgain = false;
+
+  return showDialog<bool>(
+    context: context,
+    builder: (ctx) {
+      return StatefulBuilder(
+        builder: (ctx, setState) {
+          return AlertDialog(
+            title: const Text('打开外部链接'),
+            content: Column(
+              mainAxisSize: MainAxisSize.min,
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                const Text('即将在浏览器中打开以下链接：'),
+                const SizedBox(height: 8),
+                Text(
+                  url,
+                  style: TextStyle(
+                    fontSize: 13,
+                    color: Theme.of(ctx).colorScheme.primary,
+                  ),
+                  maxLines: 3,
+                  overflow: TextOverflow.ellipsis,
+                ),
+                const SizedBox(height: 12),
+                Row(
+                  children: [
+                    Checkbox(
+                      value: dontAskAgain,
+                      onChanged: (value) {
+                        setState(() {
+                          dontAskAgain = value ?? false;
+                        });
+                      },
+                    ),
+                    const Text('不再询问'),
+                  ],
+                ),
+              ],
+            ),
+            actions: [
+              TextButton(
+                onPressed: () => Navigator.pop(ctx, false),
+                child: const Text('取消'),
+              ),
+              FilledButton(
+                onPressed: () async {
+                  if (dontAskAgain) {
+                    final container = ProviderScope.containerOf(ctx);
+                    await container
+                        .read(settingsProvider.notifier)
+                        .setSkipExternalLinkConfirm(true);
+                  }
+                  if (ctx.mounted) {
+                    Navigator.pop(ctx, true);
+                  }
+                },
+                child: const Text('打开'),
+              ),
+            ],
+          );
+        },
+      );
+    },
   );
 }

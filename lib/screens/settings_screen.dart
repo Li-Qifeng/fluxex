@@ -5,11 +5,24 @@ import '../providers/settings_provider.dart';
 import '../utils/app_toast.dart';
 import '../utils/db_helper.dart';
 
-class SettingsScreen extends ConsumerWidget {
+class SettingsScreen extends ConsumerStatefulWidget {
   const SettingsScreen({super.key});
 
   @override
-  Widget build(BuildContext context, WidgetRef ref) {
+  ConsumerState<SettingsScreen> createState() => _SettingsScreenState();
+}
+
+class _SettingsScreenState extends ConsumerState<SettingsScreen> {
+  final _keywordController = TextEditingController();
+
+  @override
+  void dispose() {
+    _keywordController.dispose();
+    super.dispose();
+  }
+
+  @override
+  Widget build(BuildContext context) {
     final settings = ref.watch(settingsProvider);
     final notifier = ref.read(settingsProvider.notifier);
     final cs = Theme.of(context).colorScheme;
@@ -123,6 +136,64 @@ class SettingsScreen extends ConsumerWidget {
                   }
                 }
               },
+            ),
+          ),
+          const SizedBox(height: 24),
+          // 关键词过滤
+          _SectionTitle(title: '关键词过滤', colorScheme: cs),
+          Card(
+            margin: const EdgeInsets.symmetric(horizontal: 16, vertical: 4),
+            elevation: 0,
+            color: cs.surfaceContainerHighest.withOpacity(0.4),
+            child: Padding(
+              padding: const EdgeInsets.all(16),
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  if (settings.blockedKeywords.isNotEmpty)
+                    Wrap(
+                      spacing: 8,
+                      runSpacing: 4,
+                      children: settings.blockedKeywords.map((kw) {
+                        return Chip(
+                          label: Text(kw),
+                          onDeleted: () => notifier.removeBlockedKeyword(kw),
+                        );
+                      }).toList(),
+                    )
+                  else
+                    Text(
+                      '暂无屏蔽关键词',
+                      style: TextStyle(color: cs.onSurfaceVariant, fontSize: 13),
+                    ),
+                  const SizedBox(height: 12),
+                  Row(
+                    children: [
+                      Expanded(
+                        child: TextField(
+                          controller: _keywordController,
+                          decoration: const InputDecoration(
+                            hintText: '输入关键词',
+                            isDense: true,
+                            border: OutlineInputBorder(),
+                          ),
+                        ),
+                      ),
+                      const SizedBox(width: 8),
+                      FilledButton(
+                        onPressed: () {
+                          final kw = _keywordController.text.trim();
+                          if (kw.isNotEmpty) {
+                            notifier.addBlockedKeyword(kw);
+                            _keywordController.clear();
+                          }
+                        },
+                        child: const Text('添加'),
+                      ),
+                    ],
+                  ),
+                ],
+              ),
             ),
           ),
           const SizedBox(height: 24),

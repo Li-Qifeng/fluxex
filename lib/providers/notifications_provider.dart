@@ -17,15 +17,64 @@ class NotificationItem {
   });
 }
 
-final notificationsProvider = FutureProvider<List<NotificationItem>>((ref) async {
-  final api = V2exApiClient();
-  final response = await api.dio.get('https://www.v2ex.com/notifications');
-  final html = response.data as String;
-  final document = parse(html);
+class PaginatedNotificationsNotifier extends AsyncNotifier<List<NotificationItem>> {
+  int _page = 1;
+  bool _hasMore = true;
+  bool _isLoadingMore = false;
 
-  final cells = document.querySelectorAll('#notifications .cell, .notification_item');
-  return cells.map(_parseNotificationCell).whereType<NotificationItem>().toList();
-});
+  bool get hasMore => _hasMore;
+  bool get isLoadingMore => _isLoadingMore;
+
+  @override
+  Future<List<NotificationItem>> build() async {
+    _page = 1;
+    _hasMore = true;
+    return _fetchPage(1);
+  }
+
+  Future<List<NotificationItem>> _fetchPage(int page) async {
+    final api = V2exApiClient();
+    final response = await api.dio.get('https://www.v2ex.com/notifications?p=$page');
+    final html = response.data as String;
+    final document = parse(html);
+
+    final cells = document.querySelectorAll('#notifications .cell, .notification_item');
+    final items = cells
+        .map(_parseNotificationCell)
+        .whereType<NotificationItem>()
+        .toList();
+
+    if (items.isEmpty || items.length < 20) {
+      _hasMore = false;
+    }
+
+    return items;
+  }
+
+  Future<void> loadMore() async {
+    if (_isLoadingMore || !_hasMore) return;
+    _isLoadingMore = true;
+    // Trigger rebuild to show bottom loading indicator
+    state = AsyncValue.data(state.valueOrNull ?? []);
+
+    try {
+      _page++;
+      final newItems = await _fetchPage(_page);
+      final current = state.valueOrNull ?? [];
+      state = AsyncValue.data([...current, ...newItems]);
+    } catch (e, stack) {
+      _page--; // rollback
+      state = AsyncValue.error(e, stack);
+    } finally {
+      _isLoadingMore = false;
+    }
+  }
+}
+
+final paginatedNotificationsProvider =
+    AsyncNotifierProvider<PaginatedNotificationsNotifier, List<NotificationItem>>(
+  PaginatedNotificationsNotifier.new,
+);
 
 NotificationItem? _parseNotificationCell(Element cell) {
   final link = cell.querySelector('a[href*="/t/"], a[href*="/member/"]');
