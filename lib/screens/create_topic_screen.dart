@@ -9,6 +9,7 @@ import '../utils/app_toast.dart';
 import '../utils/db_helper.dart';
 import '../widgets/cached_avatar.dart';
 import '../widgets/emoji_picker.dart';
+import '../widgets/markdown_preview_sheet.dart';
 
 class CreateTopicScreen extends ConsumerStatefulWidget {
   const CreateTopicScreen({super.key});
@@ -172,6 +173,18 @@ class _CreateTopicScreenState extends ConsumerState<CreateTopicScreen> {
         title: const Text('发布新话题'),
         centerTitle: true,
         actions: [
+          TextButton(
+            onPressed: () => showModalBottomSheet(
+              context: context,
+              isScrollControlled: true,
+              backgroundColor: Theme.of(context).colorScheme.surface,
+              builder: (_) => MarkdownPreviewSheet(
+                title: _titleController.text,
+                content: _contentController.text,
+              ),
+            ),
+            child: Text('预览', style: TextStyle(color: cs.primary)),
+          ),
           TextButton(
             onPressed: _sending ? null : _send,
             child: _sending
