@@ -4,6 +4,7 @@ import 'package:url_launcher/url_launcher.dart';
 import '../providers/notification_provider.dart';
 import '../providers/notifications_provider.dart';
 import '../widgets/cached_avatar.dart';
+import '../widgets/notification_list_shimmer.dart';
 
 class NotificationsScreen extends ConsumerStatefulWidget {
   const NotificationsScreen({super.key});
@@ -116,7 +117,7 @@ class _NotificationsScreenState extends ConsumerState<NotificationsScreen> {
             },
           );
         },
-        loading: () => const Center(child: CircularProgressIndicator()),
+        loading: () => const NotificationListShimmer(count: 6),
         error: (err, _) => Center(
           child: Column(
             mainAxisAlignment: MainAxisAlignment.center,

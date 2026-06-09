@@ -4,8 +4,10 @@ import 'package:intl/intl.dart';
 import 'package:url_launcher/url_launcher.dart';
 import '../providers/member_provider.dart';
 import '../widgets/cached_avatar.dart';
+import '../widgets/member_detail_skeleton.dart';
 import '../widgets/state_widgets.dart';
 import '../widgets/topic_card.dart';
+import '../widgets/topic_card_shimmer.dart';
 
 class MemberDetailScreen extends ConsumerWidget {
   final String username;
@@ -31,141 +33,140 @@ class MemberDetailScreen extends ConsumerWidget {
     final topicsAsync = ref.watch(memberTopicsProvider(username));
 
     return Scaffold(
-      body: CustomScrollView(
-        slivers: [
-          SliverAppBar(
-            expandedHeight: 200,
-            pinned: true,
-            flexibleSpace: FlexibleSpaceBar(
-              background: Container(
-                color: Theme.of(context).colorScheme.secondaryContainer,
-                child: Center(
-                  child: memberAsync.when(
-                    data: (member) => Column(
-                      mainAxisAlignment: MainAxisAlignment.center,
-                      children: [
-                        const SizedBox(height: 40),
-                        Hero(
-                          tag: 'member-avatar-${member.username}',
-                          child: CachedAvatar(
-                            imageUrl: member.avatarLarge,
-                            radius: 44,
-                            fallbackText: member.username,
-                          ),
-                        ),
-                        const SizedBox(height: 10),
-                        Text(
-                          member.username,
-                          style: TextStyle(
-                            fontSize: 20,
-                            fontWeight: FontWeight.bold,
-                            color: Theme.of(context).colorScheme.onSecondaryContainer,
-                          ),
-                        ),
-                        if (member.tagline != null && member.tagline!.isNotEmpty)
-                          Padding(
-                            padding: const EdgeInsets.symmetric(horizontal: 32),
-                            child: Text(
-                              member.tagline!,
-                              style: TextStyle(
-                                fontSize: 13,
-                                color: Theme.of(context).colorScheme.onSecondaryContainer.withOpacity(0.7),
-                              ),
-                              maxLines: 1,
-                              overflow: TextOverflow.ellipsis,
-                              textAlign: TextAlign.center,
+      body: memberAsync.when(
+        data: (member) {
+          return CustomScrollView(
+            slivers: [
+              SliverAppBar(
+                expandedHeight: 200,
+                pinned: true,
+                flexibleSpace: FlexibleSpaceBar(
+                  background: Container(
+                    color: Theme.of(context).colorScheme.secondaryContainer,
+                    child: Center(
+                      child: Column(
+                        mainAxisAlignment: MainAxisAlignment.center,
+                        children: [
+                          const SizedBox(height: 40),
+                          Hero(
+                            tag: 'member-avatar-${member.username}',
+                            child: CachedAvatar(
+                              imageUrl: member.avatarLarge,
+                              radius: 44,
+                              fallbackText: member.username,
                             ),
                           ),
-                      ],
+                          const SizedBox(height: 10),
+                          Text(
+                            member.username,
+                            style: TextStyle(
+                              fontSize: 20,
+                              fontWeight: FontWeight.bold,
+                              color: Theme.of(context).colorScheme.onSecondaryContainer,
+                            ),
+                          ),
+                          if (member.tagline != null && member.tagline!.isNotEmpty)
+                            Padding(
+                              padding: const EdgeInsets.symmetric(horizontal: 32),
+                              child: Text(
+                                member.tagline!,
+                                style: TextStyle(
+                                  fontSize: 13,
+                                  color: Theme.of(context).colorScheme.onSecondaryContainer.withOpacity(0.7),
+                                ),
+                                maxLines: 1,
+                                overflow: TextOverflow.ellipsis,
+                                textAlign: TextAlign.center,
+                              ),
+                            ),
+                        ],
+                      ),
                     ),
-                    loading: () => const CircularProgressIndicator(),
-                    error: (_, __) => const Icon(Icons.error, size: 48),
                   ),
                 ),
               ),
-            ),
-          ),
-          memberAsync.when(
-            data: (member) => SliverToBoxAdapter(
-              child: Padding(
-                padding: const EdgeInsets.all(16),
-                child: Column(
-                  crossAxisAlignment: CrossAxisAlignment.start,
-                  children: [
-                    // 统计卡片
-                    topicsAsync.when(
-                      data: (topics) => _buildStatsCard(context, topics.length, member),
-                      loading: () => _buildStatsCard(context, 0, member),
-                      error: (_, __) => _buildStatsCard(context, 0, member),
-                    ),
-                    const SizedBox(height: 16),
-                    // Bio
-                    if (member.bio != null && member.bio!.isNotEmpty) ...[
+              SliverToBoxAdapter(
+                child: Padding(
+                  padding: const EdgeInsets.all(16),
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      // 统计卡片
+                      topicsAsync.when(
+                        data: (topics) => _buildStatsCard(context, topics.length, member),
+                        loading: () => _buildStatsCard(context, 0, member),
+                        error: (_, __) => _buildStatsCard(context, 0, member),
+                      ),
+                      const SizedBox(height: 16),
+                      // Bio
+                      if (member.bio != null && member.bio!.isNotEmpty) ...[
+                        Text(
+                          '关于',
+                          style: Theme.of(context).textTheme.titleSmall?.copyWith(
+                            fontWeight: FontWeight.w600,
+                          ),
+                        ),
+                        const SizedBox(height: 8),
+                        Text(
+                          member.bio!,
+                          style: TextStyle(
+                            fontSize: 14,
+                            height: 1.6,
+                            color: Theme.of(context).colorScheme.onSurfaceVariant,
+                          ),
+                        ),
+                        const SizedBox(height: 16),
+                      ],
+                      // 社交链接
+                      _buildSocialLinks(context, member),
+                      const SizedBox(height: 16),
+                      const Divider(),
+                      const SizedBox(height: 8),
                       Text(
-                        '关于',
-                        style: Theme.of(context).textTheme.titleSmall?.copyWith(
-                          fontWeight: FontWeight.w600,
+                        '最近话题',
+                        style: Theme.of(context).textTheme.titleMedium?.copyWith(
+                          fontWeight: FontWeight.bold,
                         ),
                       ),
                       const SizedBox(height: 8),
-                      Text(
-                        member.bio!,
-                        style: TextStyle(
-                          fontSize: 14,
-                          height: 1.6,
-                          color: Theme.of(context).colorScheme.onSurfaceVariant,
-                        ),
-                      ),
-                      const SizedBox(height: 16),
                     ],
-                    // 社交链接
-                    _buildSocialLinks(context, member),
-                    const SizedBox(height: 16),
-                    const Divider(),
-                    const SizedBox(height: 8),
-                    Text(
-                      '最近话题',
-                      style: Theme.of(context).textTheme.titleMedium?.copyWith(
-                        fontWeight: FontWeight.bold,
-                      ),
-                    ),
-                    const SizedBox(height: 8),
-                  ],
+                  ),
                 ),
               ),
-            ),
-            loading: () => const SliverToBoxAdapter(child: SizedBox()),
-            error: (_, __) => const SliverToBoxAdapter(
-              child: Padding(
-                padding: EdgeInsets.all(32),
-                child: Center(child: Text('用户加载失败')),
+              topicsAsync.when(
+                data: (topics) {
+                  if (topics.isEmpty) {
+                    return const SliverToBoxAdapter(
+                      child: EmptyState(message: '暂无话题'),
+                    );
+                  }
+                  return SliverList.builder(
+                    itemCount: topics.length,
+                    itemBuilder: (context, index) => TopicCard(topic: topics[index]),
+                  );
+                },
+                loading: () => const SliverToBoxAdapter(
+                  child: TopicListShimmer(count: 4),
+                ),
+                error: (err, _) => SliverToBoxAdapter(
+                  child: ErrorState(
+                    message: '话题加载失败: $err',
+                    onRetry: () => ref.invalidate(memberTopicsProvider(username)),
+                  ),
+                ),
               ),
-            ),
+              const SliverPadding(padding: EdgeInsets.only(bottom: 32)),
+            ],
+          );
+        },
+        loading: () => const MemberDetailSkeleton(),
+        error: (err, _) => Scaffold(
+          appBar: AppBar(title: const Text('用户详情')),
+          body: ErrorState(
+            message: '用户加载失败: $err',
+            onRetry: () => ref.invalidate(memberDetailProvider(username)),
           ),
-          topicsAsync.when(
-            data: (topics) {
-              if (topics.isEmpty) {
-                return const SliverToBoxAdapter(
-                  child: EmptyState(message: '暂无话题'),
-                );
-              }
-              return SliverList.builder(
-                itemCount: topics.length,
-                itemBuilder: (context, index) => TopicCard(topic: topics[index]),
-              );
-            },
-            loading: () => const SliverToBoxAdapter(
-              child: LoadingState(),
-            ),
-            error: (err, _) => SliverToBoxAdapter(
-              child: ErrorState(
-                message: '话题加载失败: $err',
-                onRetry: () => ref.invalidate(memberTopicsProvider(username)),
-              ),
-            ),
-          ),
-          const SliverPadding(padding: EdgeInsets.only(bottom: 32)),
-        ],
+        ),
       ),
     );
   }
