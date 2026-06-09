@@ -1,5 +1,4 @@
 import 'package:dynamic_color/dynamic_color.dart';
-import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:flutter_displaymode/flutter_displaymode.dart';
@@ -9,7 +8,6 @@ import 'package:google_fonts/google_fonts.dart';
 import 'package:phosphor_flutter/phosphor_flutter.dart';
 import 'providers/notification_provider.dart';
 import 'providers/settings_provider.dart';
-import 'widgets/glass_container.dart';
 import 'screens/home_screen.dart';
 import 'screens/nodes_screen.dart';
 import 'screens/search_screen.dart';
@@ -195,8 +193,6 @@ class _V2exAppState extends ConsumerState<V2exApp> {
       labelMedium: rawTextTheme.labelMedium?.copyWith(fontWeight: FontWeight.w600),
       labelSmall: rawTextTheme.labelSmall?.copyWith(fontWeight: FontWeight.w600),
     );
-    final isApple = defaultTargetPlatform == TargetPlatform.iOS ||
-        defaultTargetPlatform == TargetPlatform.macOS;
     return base.copyWith(
       textTheme: textTheme,
       appBarTheme: base.appBarTheme.copyWith(
@@ -205,10 +201,6 @@ class _V2exAppState extends ConsumerState<V2exApp> {
           fontWeight: FontWeight.w600,
           color: colorScheme.onSurface,
         ),
-        backgroundColor: isApple
-            ? Colors.transparent
-            : colorScheme.surface,
-        surfaceTintColor: isApple ? Colors.transparent : null,
       ),
     );
   }
@@ -270,82 +262,39 @@ class ScaffoldWithNavBar extends ConsumerWidget {
       );
     }
 
-    final isApple = defaultTargetPlatform == TargetPlatform.iOS ||
-        defaultTargetPlatform == TargetPlatform.macOS;
-
     return Scaffold(
       body: ConstrainedContent(child: child),
-      bottomNavigationBar: isApple
-          ? Stack(
-              children: [
-                const GlassNavBarBackground(),
-                NavigationBar(
-                  backgroundColor: Colors.transparent,
-                  surfaceTintColor: Colors.transparent,
-                  shadowColor: Colors.transparent,
-                  selectedIndex: currentIndex,
-                  onDestinationSelected: (index) {
-                    if (index == 0) context.go('/');
-                    if (index == 1) context.go('/nodes');
-                    if (index == 2) context.go('/search');
-                    if (index == 3) context.go('/profile');
-                  },
-                  destinations: [
-                    NavigationDestination(
-                      icon: Icon(PhosphorIcons.house()),
-                      selectedIcon: Icon(PhosphorIconsFill.house),
-                      label: '首页',
-                    ),
-                    NavigationDestination(
-                      icon: Icon(PhosphorIcons.treeStructure()),
-                      selectedIcon: Icon(PhosphorIconsFill.treeStructure),
-                      label: '节点',
-                    ),
-                    NavigationDestination(
-                      icon: Icon(PhosphorIcons.magnifyingGlass()),
-                      selectedIcon: Icon(PhosphorIconsFill.magnifyingGlass),
-                      label: '搜索',
-                    ),
-                    NavigationDestination(
-                      icon: notificationIcon(PhosphorIcons.user()),
-                      selectedIcon: notificationIcon(PhosphorIconsFill.user),
-                      label: '账号',
-                    ),
-                  ],
-                ),
-              ],
-            )
-          : NavigationBar(
-              selectedIndex: currentIndex,
-              onDestinationSelected: (index) {
-                if (index == 0) context.go('/');
-                if (index == 1) context.go('/nodes');
-                if (index == 2) context.go('/search');
-                if (index == 3) context.go('/profile');
-              },
-              destinations: [
-                NavigationDestination(
-                  icon: Icon(PhosphorIcons.house()),
-                  selectedIcon: Icon(PhosphorIconsFill.house),
-                  label: '首页',
-                ),
-                NavigationDestination(
-                  icon: Icon(PhosphorIcons.treeStructure()),
-                  selectedIcon: Icon(PhosphorIconsFill.treeStructure),
-                  label: '节点',
-                ),
-                NavigationDestination(
-                  icon: Icon(PhosphorIcons.magnifyingGlass()),
-                  selectedIcon: Icon(PhosphorIconsFill.magnifyingGlass),
-                  label: '搜索',
-                ),
-                NavigationDestination(
-                  icon: notificationIcon(PhosphorIcons.user()),
-                  selectedIcon: notificationIcon(PhosphorIconsFill.user),
-                  label: '账号',
-                ),
-              ],
-            ),
+      bottomNavigationBar: NavigationBar(
+        selectedIndex: currentIndex,
+        onDestinationSelected: (index) {
+          if (index == 0) context.go('/');
+          if (index == 1) context.go('/nodes');
+          if (index == 2) context.go('/search');
+          if (index == 3) context.go('/profile');
+        },
+        destinations: [
+          NavigationDestination(
+            icon: Icon(PhosphorIcons.house()),
+            selectedIcon: Icon(PhosphorIconsFill.house),
+            label: '首页',
+          ),
+          NavigationDestination(
+            icon: Icon(PhosphorIcons.treeStructure()),
+            selectedIcon: Icon(PhosphorIconsFill.treeStructure),
+            label: '节点',
+          ),
+          NavigationDestination(
+            icon: Icon(PhosphorIcons.magnifyingGlass()),
+            selectedIcon: Icon(PhosphorIconsFill.magnifyingGlass),
+            label: '搜索',
+          ),
+          NavigationDestination(
+            icon: notificationIcon(PhosphorIcons.user()),
+            selectedIcon: notificationIcon(PhosphorIconsFill.user),
+            label: '账号',
+          ),
+        ],
+      ),
     );
   }
 }

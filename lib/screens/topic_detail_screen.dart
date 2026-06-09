@@ -1,5 +1,5 @@
 import 'dart:async';
-import 'dart:io' show Platform, Directory, File;
+import 'dart:io' show Directory, File;
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:share_plus/share_plus.dart';
@@ -18,7 +18,6 @@ import '../widgets/share_image_widget.dart';
 import '../widgets/state_widgets.dart';
 import '../widgets/topic_header.dart';
 import '../widgets/reply_item.dart';
-import '../widgets/glass_container.dart';
 
 class TopicDetailScreen extends ConsumerStatefulWidget {
   final int topicId;
@@ -793,73 +792,33 @@ class _TopicDetailScreenState extends ConsumerState<TopicDetailScreen> {
                     _jumpToFloor(target);
                   }
                 },
-                child: _GlassCapsule(
-                  currentFloor: _currentFloor,
-                  totalReplies: _totalReplies,
+                child: Container(
+                  padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 8),
+                  decoration: BoxDecoration(
+                    color: Theme.of(context).colorScheme.primaryContainer,
+                    borderRadius: BorderRadius.circular(20),
+                    boxShadow: [
+                      BoxShadow(
+                        color: Colors.black.withOpacity(0.08),
+                        blurRadius: 8,
+                        offset: const Offset(0, 2),
+                      ),
+                    ],
+                  ),
+                  child: Text(
+                    _currentFloor > 0
+                        ? '$_currentFloor / $_totalReplies'
+                        : '0 / $_totalReplies',
+                    style: TextStyle(
+                      fontSize: 13,
+                      fontWeight: FontWeight.w600,
+                      color: Theme.of(context).colorScheme.onPrimaryContainer,
+                    ),
+                  ),
                 ),
               ),
             ),
         ],
-      ),
-    );
-  }
-}
-
-/// 楼层进度胶囊 — iOS/macOS 使用液态玻璃效果
-class _GlassCapsule extends StatelessWidget {
-  final int currentFloor;
-  final int totalReplies;
-
-  const _GlassCapsule({required this.currentFloor, required this.totalReplies});
-
-  @override
-  Widget build(BuildContext context) {
-    final cs = Theme.of(context).colorScheme;
-    final isApple = Platform.isIOS || Platform.isMacOS;
-    final floorText = currentFloor > 0
-        ? '$currentFloor / $totalReplies'
-        : '0 / $totalReplies';
-
-    if (isApple) {
-      return GlassContainer(
-        blur: 20,
-        opacity: 0.25,
-        borderRadius: BorderRadius.circular(20),
-        tintColor: cs.primaryContainer,
-        child: Padding(
-          padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 8),
-          child: Text(
-            floorText,
-            style: TextStyle(
-              fontSize: 13,
-              fontWeight: FontWeight.w600,
-              color: cs.onPrimaryContainer,
-            ),
-          ),
-        ),
-      );
-    }
-
-    return Container(
-      padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 8),
-      decoration: BoxDecoration(
-        color: cs.primaryContainer,
-        borderRadius: BorderRadius.circular(20),
-        boxShadow: [
-          BoxShadow(
-            color: Colors.black.withOpacity(0.08),
-            blurRadius: 8,
-            offset: const Offset(0, 2),
-          ),
-        ],
-      ),
-      child: Text(
-        floorText,
-        style: TextStyle(
-          fontSize: 13,
-          fontWeight: FontWeight.w600,
-          color: cs.onPrimaryContainer,
-        ),
       ),
     );
   }
