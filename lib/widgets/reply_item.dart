@@ -20,7 +20,6 @@ class ReplyItem extends StatelessWidget {
   /// 提取被引用的用户名前缀，如 "@username "
   String? _extractMention(String? rendered) {
     if (rendered == null) return null;
-    // v2ex 的引用通常是 <a href="/member/xxx">@xxx</a> 开头
     final exp = RegExp(r'<a[^>]*member[^>]*>@([^<]+)</a>');
     final match = exp.firstMatch(rendered);
     if (match != null) {
@@ -29,7 +28,7 @@ class ReplyItem extends StatelessWidget {
     return null;
   }
 
-  /// 移除引用标记后展示正文（如果有引用的话）
+  /// 移除引用标记后展示正文
   String? _stripLeadingMention(String? rendered) {
     if (rendered == null) return null;
     final exp = RegExp(r'^\s*<a[^>]*member[^>]*>@[^<]+</a>\s*');
@@ -58,80 +57,77 @@ class ReplyItem extends StatelessWidget {
     final bodyRendered = _stripLeadingMention(reply.contentRendered) ?? reply.contentRendered;
     final bodyContent = _stripLeadingMention(reply.content) ?? reply.content;
 
-    return Card(
-      margin: const EdgeInsets.symmetric(horizontal: 16, vertical: 6),
-      elevation: 0,
-      color: cs.surfaceContainerHighest.withOpacity(0.3),
-      shape: RoundedRectangleBorder(
-        borderRadius: BorderRadius.circular(16),
-        side: BorderSide(color: cs.outlineVariant.withOpacity(0.25)),
+    return Container(
+      padding: const EdgeInsets.fromLTRB(16, 14, 16, 14),
+      decoration: BoxDecoration(
+        color: cs.surface,
+        border: Border(
+          bottom: BorderSide(
+            color: cs.outlineVariant.withOpacity(0.3),
+            width: 0.5,
+          ),
+        ),
       ),
-      child: Padding(
-        padding: const EdgeInsets.all(14),
-        child: Column(
-          crossAxisAlignment: CrossAxisAlignment.start,
-          children: [
-            Row(
-              children: [
-                GestureDetector(
-                  onTap: () => context.push('/member/${reply.member.username}'),
-                  child: CachedAvatar(
-                    imageUrl: reply.member.avatarNormal,
-                    radius: 16,
-                    fallbackText: reply.member.username,
-                  ),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          // 头部：用户名 + 时间 + 楼层
+          Row(
+            children: [
+              GestureDetector(
+                onTap: () => context.push('/member/${reply.member.username}'),
+                child: CachedAvatar(
+                  imageUrl: reply.member.avatarNormal,
+                  radius: 16,
+                  fallbackText: reply.member.username,
                 ),
-                const SizedBox(width: 10),
-                Expanded(
-                  child: Column(
-                    crossAxisAlignment: CrossAxisAlignment.start,
-                    children: [
-                      GestureDetector(
-                        onTap: () => context.push('/member/${reply.member.username}'),
-                        child: Text(
-                          reply.member.username,
-                          style: TextStyle(
-                            fontSize: 13,
-                            fontWeight: FontWeight.w600,
-                            color: cs.onSurface,
-                          ),
-                        ),
-                      ),
-                      Text(
-                        formatRelativeTime(reply.created),
+              ),
+              const SizedBox(width: 10),
+              Expanded(
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    GestureDetector(
+                      onTap: () => context.push('/member/${reply.member.username}'),
+                      child: Text(
+                        reply.member.username,
                         style: TextStyle(
-                          fontSize: 11,
-                          color: cs.outline,
+                          fontSize: 14,
+                          fontWeight: FontWeight.w600,
+                          color: cs.onSurface,
                         ),
                       ),
-                    ],
-                  ),
-                ),
-                Container(
-                  padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 2),
-                  decoration: BoxDecoration(
-                    color: cs.surfaceContainerHighest,
-                    borderRadius: BorderRadius.circular(8),
-                  ),
-                  child: Text(
-                    '#$floor',
-                    style: TextStyle(
-                      fontSize: 12,
-                      color: cs.onSurfaceVariant,
-                      fontWeight: FontWeight.w500,
                     ),
-                  ),
+                    Text(
+                      formatRelativeTime(reply.created),
+                      style: TextStyle(
+                        fontSize: 12,
+                        color: cs.onSurfaceVariant.withOpacity(0.6),
+                        fontWeight: FontWeight.w400,
+                      ),
+                    ),
+                  ],
                 ),
-              ],
-            ),
-            const SizedBox(height: 10),
-            if (mention != null)
-              Container(
-                margin: const EdgeInsets.only(bottom: 8),
+              ),
+              Text(
+                '#$floor',
+                style: TextStyle(
+                  fontSize: 12,
+                  color: cs.onSurfaceVariant.withOpacity(0.5),
+                  fontWeight: FontWeight.w500,
+                ),
+              ),
+            ],
+          ),
+          // 引用标记
+          if (mention != null)
+            Padding(
+              padding: const EdgeInsets.only(top: 10),
+              child: Container(
                 padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 6),
                 decoration: BoxDecoration(
-                  color: cs.primaryContainer.withOpacity(0.4),
-                  borderRadius: BorderRadius.circular(8),
+                  color: cs.primaryContainer.withOpacity(0.3),
+                  borderRadius: BorderRadius.circular(6),
                 ),
                 child: Text(
                   mention,
@@ -142,62 +138,67 @@ class ReplyItem extends StatelessWidget {
                   ),
                 ),
               ),
-            if (bodyRendered != null && bodyRendered.isNotEmpty)
-              _maybeCollapse(
+            ),
+          const SizedBox(height: 10),
+          // 正文
+          if (bodyRendered != null && bodyRendered.isNotEmpty)
+            _maybeCollapse(
+              bodyRendered,
+              HtmlWidget(
                 bodyRendered,
-                HtmlWidget(
-                  bodyRendered,
-                  textStyle: TextStyle(
-                    fontSize: 14,
-                    height: 1.6,
-                    color: cs.onSurfaceVariant,
-                  ),
-                  customStylesBuilder: codeBlockStylesBuilder,
-                  customWidgetBuilder: codeBlockWidgetBuilder,
-                  onTapUrl: (url) {
-                    handleTapUrl(context, url);
-                    return true;
-                  },
-                ),
-              )
-            else if (bodyContent != null)
-              Text(
-                bodyContent,
-                style: TextStyle(
-                  fontSize: 14,
+                textStyle: TextStyle(
+                  fontSize: 15,
                   height: 1.6,
-                  color: cs.onSurfaceVariant,
+                  fontWeight: FontWeight.w400,
+                  color: cs.onSurface,
                 ),
+                customStylesBuilder: codeBlockStylesBuilder,
+                customWidgetBuilder: codeBlockWidgetBuilder,
+                onTapUrl: (url) {
+                  handleTapUrl(context, url);
+                  return true;
+                },
               ),
-            const SizedBox(height: 8),
-            Row(
-              mainAxisAlignment: MainAxisAlignment.end,
-              children: [
-                if (onQuote != null)
-                  IconButton(
-                    icon: const Icon(Icons.format_quote_outlined, size: 18),
-                    tooltip: '引用',
-                    visualDensity: VisualDensity.compact,
-                    constraints: const BoxConstraints(minWidth: 32, minHeight: 32),
-                    padding: EdgeInsets.zero,
-                    onPressed: onQuote,
-                  ),
+            )
+          else if (bodyContent != null)
+            Text(
+              bodyContent,
+              style: TextStyle(
+                fontSize: 15,
+                height: 1.6,
+                fontWeight: FontWeight.w400,
+                color: cs.onSurface,
+              ),
+            ),
+          // 操作栏
+          const SizedBox(height: 6),
+          Row(
+            mainAxisAlignment: MainAxisAlignment.end,
+            children: [
+              if (onQuote != null)
                 IconButton(
-                  icon: const Icon(Icons.share_outlined, size: 18),
-                  tooltip: '分享回复',
+                  icon: Icon(Icons.format_quote_outlined, size: 18, color: cs.onSurfaceVariant.withOpacity(0.6)),
+                  tooltip: '引用',
                   visualDensity: VisualDensity.compact,
                   constraints: const BoxConstraints(minWidth: 32, minHeight: 32),
                   padding: EdgeInsets.zero,
-                  onPressed: () {
-                    final summary = _getPlainTextSummary(reply.content, reply.contentRendered);
-                    final text = '@${reply.member.username}: $summary\nhttps://www.v2ex.com/t/${reply.topicId}';
-                    Share.share(text);
-                  },
+                  onPressed: onQuote,
                 ),
-              ],
-            ),
-          ],
-        ),
+              IconButton(
+                icon: Icon(Icons.share_outlined, size: 18, color: cs.onSurfaceVariant.withOpacity(0.6)),
+                tooltip: '分享回复',
+                visualDensity: VisualDensity.compact,
+                constraints: const BoxConstraints(minWidth: 32, minHeight: 32),
+                padding: EdgeInsets.zero,
+                onPressed: () {
+                  final summary = _getPlainTextSummary(reply.content, reply.contentRendered);
+                  final text = '@${reply.member.username}: $summary\nhttps://www.v2ex.com/t/${reply.topicId}';
+                  Share.share(text);
+                },
+              ),
+            ],
+          ),
+        ],
       ),
     );
   }

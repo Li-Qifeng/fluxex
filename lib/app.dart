@@ -174,7 +174,25 @@ class _V2exAppState extends ConsumerState<V2exApp> {
         scrolledUnderElevation: 0.5,
       ),
     );
-    final textTheme = GoogleFonts.notoSansTextTheme(base.textTheme);
+    // NotoSans 默认 w400 偏细，整体提升一级
+    final rawTextTheme = GoogleFonts.notoSansTextTheme(base.textTheme);
+    final textTheme = rawTextTheme.copyWith(
+      displayLarge: rawTextTheme.displayLarge?.copyWith(fontWeight: FontWeight.w500),
+      displayMedium: rawTextTheme.displayMedium?.copyWith(fontWeight: FontWeight.w500),
+      displaySmall: rawTextTheme.displaySmall?.copyWith(fontWeight: FontWeight.w500),
+      headlineLarge: rawTextTheme.headlineLarge?.copyWith(fontWeight: FontWeight.w600),
+      headlineMedium: rawTextTheme.headlineMedium?.copyWith(fontWeight: FontWeight.w600),
+      headlineSmall: rawTextTheme.headlineSmall?.copyWith(fontWeight: FontWeight.w600),
+      titleLarge: rawTextTheme.titleLarge?.copyWith(fontWeight: FontWeight.w600),
+      titleMedium: rawTextTheme.titleMedium?.copyWith(fontWeight: FontWeight.w600),
+      titleSmall: rawTextTheme.titleSmall?.copyWith(fontWeight: FontWeight.w600),
+      bodyLarge: rawTextTheme.bodyLarge?.copyWith(fontWeight: FontWeight.w500),
+      bodyMedium: rawTextTheme.bodyMedium?.copyWith(fontWeight: FontWeight.w500),
+      bodySmall: rawTextTheme.bodySmall?.copyWith(fontWeight: FontWeight.w500),
+      labelLarge: rawTextTheme.labelLarge?.copyWith(fontWeight: FontWeight.w600),
+      labelMedium: rawTextTheme.labelMedium?.copyWith(fontWeight: FontWeight.w600),
+      labelSmall: rawTextTheme.labelSmall?.copyWith(fontWeight: FontWeight.w600),
+    );
     return base.copyWith(
       textTheme: textTheme,
       appBarTheme: base.appBarTheme.copyWith(

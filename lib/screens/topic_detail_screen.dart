@@ -349,17 +349,23 @@ class _TopicDetailScreenState extends ConsumerState<TopicDetailScreen> {
                 SliverToBoxAdapter(
                   child: TopicHeader(topic: topic),
                 ),
-                const SliverToBoxAdapter(
-                  child: Padding(
-                    padding: EdgeInsets.symmetric(horizontal: 16),
-                    child: Divider(),
-                  ),
-                ),
+                // 回复标题栏（直接贴在 header 下方，无 Divider）
                 SliverToBoxAdapter(
-                  child: Padding(
-                    padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 4),
+                  child: Container(
+                    padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 10),
+                    decoration: BoxDecoration(
+                      color: Theme.of(context).colorScheme.surface,
+                      border: Border(
+                        bottom: BorderSide(
+                          color: Theme.of(context).colorScheme.outlineVariant.withOpacity(0.3),
+                          width: 0.5,
+                        ),
+                      ),
+                    ),
                     child: Row(
                       children: [
+                        Icon(Icons.chat_bubble_outline_rounded, size: 16, color: Theme.of(context).colorScheme.onSurfaceVariant.withOpacity(0.7)),
+                        const SizedBox(width: 6),
                         Text(
                           '${topic.replies} 回复',
                           style: Theme.of(context).textTheme.titleSmall?.copyWith(
