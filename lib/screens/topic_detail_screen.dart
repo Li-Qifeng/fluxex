@@ -5,6 +5,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:share_plus/share_plus.dart';
 import 'package:url_launcher/url_launcher.dart';
 import 'package:flutter/services.dart';
+import 'package:glassmorphism_widgets/glassmorphism_widgets.dart';
 import '../models/topic.dart';
 import '../models/reply.dart';
 import '../providers/topic_detail_provider.dart';
@@ -770,9 +771,25 @@ class _TopicDetailScreenState extends ConsumerState<TopicDetailScreen> {
           Positioned(
             bottom: 16,
             right: 16,
-            child: FloatingActionButton(
+            child: GlassFloatingActionButton(
               heroTag: 'reply',
               onPressed: () => _openReplySheet(),
+              blur: 10,
+              radius: 28,
+              linearGradient: LinearGradient(
+                colors: [
+                  Theme.of(context).colorScheme.primary.withOpacity(0.55),
+                  Theme.of(context).colorScheme.primary.withOpacity(0.22),
+                ],
+                begin: Alignment.topLeft,
+                end: Alignment.bottomRight,
+              ),
+              borderGradient: LinearGradient(
+                colors: [
+                  Colors.white.withOpacity(0.5),
+                  Colors.white.withOpacity(0.1),
+                ],
+              ),
               child: const Icon(Icons.reply),
             ),
           ),
@@ -792,19 +809,24 @@ class _TopicDetailScreenState extends ConsumerState<TopicDetailScreen> {
                     _jumpToFloor(target);
                   }
                 },
-                child: Container(
-                  padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 8),
-                  decoration: BoxDecoration(
-                    color: Theme.of(context).colorScheme.primaryContainer,
-                    borderRadius: BorderRadius.circular(20),
-                    boxShadow: [
-                      BoxShadow(
-                        color: Colors.black.withOpacity(0.08),
-                        blurRadius: 8,
-                        offset: const Offset(0, 2),
-                      ),
+                child: GlassContainer(
+                  radius: 20,
+                  blur: 12,
+                  linearGradient: LinearGradient(
+                    colors: [
+                      Theme.of(context).colorScheme.primaryContainer.withOpacity(0.45),
+                      Theme.of(context).colorScheme.primaryContainer.withOpacity(0.18),
+                    ],
+                    begin: Alignment.topLeft,
+                    end: Alignment.bottomRight,
+                  ),
+                  borderGradient: LinearGradient(
+                    colors: [
+                      Colors.white.withOpacity(0.55),
+                      Colors.white.withOpacity(0.12),
                     ],
                   ),
+                  padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 8),
                   child: Text(
                     _currentFloor > 0
                         ? '$_currentFloor / $_totalReplies'

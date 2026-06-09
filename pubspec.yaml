@@ -1,6 +1,6 @@
 name: fluxex
 description: "A modern, cross-platform V2EX client inspired by FluxDO."
-version: 0.1.15+15
+version: 0.1.16+16
 # pub.dev using `flutter pub publish`. This is preferred for private packages.
 publish_to: 'none' # Remove this line if you wish to publish to pub.dev
 
@@ -39,6 +39,7 @@ dependencies:
   flutter_markdown: ^0.7.4
   shimmer: ^3.0.0
   flutter_secure_storage: ^9.2.2
+  glassmorphism_widgets: ^0.2.2
 
 dev_dependencies:
   flutter_test:

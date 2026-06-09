@@ -1,3 +1,4 @@
+import 'dart:ui';
 import 'package:dynamic_color/dynamic_color.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
@@ -264,36 +265,44 @@ class ScaffoldWithNavBar extends ConsumerWidget {
 
     return Scaffold(
       body: ConstrainedContent(child: child),
-      bottomNavigationBar: NavigationBar(
-        selectedIndex: currentIndex,
-        onDestinationSelected: (index) {
-          if (index == 0) context.go('/');
-          if (index == 1) context.go('/nodes');
-          if (index == 2) context.go('/search');
-          if (index == 3) context.go('/profile');
-        },
-        destinations: [
-          NavigationDestination(
-            icon: Icon(PhosphorIcons.house()),
-            selectedIcon: Icon(PhosphorIconsFill.house),
-            label: '首页',
+      bottomNavigationBar: ClipRect(
+        child: BackdropFilter(
+          filter: ImageFilter.blur(sigmaX: 16, sigmaY: 16),
+          child: NavigationBar(
+            selectedIndex: currentIndex,
+            backgroundColor: Theme.of(context).colorScheme.surface.withOpacity(0.72),
+            surfaceTintColor: Colors.transparent,
+            shadowColor: Colors.transparent,
+            onDestinationSelected: (index) {
+              if (index == 0) context.go('/');
+              if (index == 1) context.go('/nodes');
+              if (index == 2) context.go('/search');
+              if (index == 3) context.go('/profile');
+            },
+            destinations: [
+              NavigationDestination(
+                icon: Icon(PhosphorIcons.house()),
+                selectedIcon: Icon(PhosphorIconsFill.house),
+                label: '首页',
+              ),
+              NavigationDestination(
+                icon: Icon(PhosphorIcons.treeStructure()),
+                selectedIcon: Icon(PhosphorIconsFill.treeStructure),
+                label: '节点',
+              ),
+              NavigationDestination(
+                icon: Icon(PhosphorIcons.magnifyingGlass()),
+                selectedIcon: Icon(PhosphorIconsFill.magnifyingGlass),
+                label: '搜索',
+              ),
+              NavigationDestination(
+                icon: notificationIcon(PhosphorIcons.user()),
+                selectedIcon: notificationIcon(PhosphorIconsFill.user),
+                label: '账号',
+              ),
+            ],
           ),
-          NavigationDestination(
-            icon: Icon(PhosphorIcons.treeStructure()),
-            selectedIcon: Icon(PhosphorIconsFill.treeStructure),
-            label: '节点',
-          ),
-          NavigationDestination(
-            icon: Icon(PhosphorIcons.magnifyingGlass()),
-            selectedIcon: Icon(PhosphorIconsFill.magnifyingGlass),
-            label: '搜索',
-          ),
-          NavigationDestination(
-            icon: notificationIcon(PhosphorIcons.user()),
-            selectedIcon: notificationIcon(PhosphorIconsFill.user),
-            label: '账号',
-          ),
-        ],
+        ),
       ),
     );
   }
