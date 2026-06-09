@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:go_router/go_router.dart';
 import 'package:intl/intl.dart';
 import '../models/topic.dart';
+import '../utils/db_helper.dart';
 
 class TopicCard extends StatelessWidget {
   final Topic topic;
@@ -24,122 +25,104 @@ class TopicCard extends StatelessWidget {
     final theme = Theme.of(context);
     final colorScheme = theme.colorScheme;
 
-    return Card(
-      margin: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
-      elevation: 0,
-      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
-      color: colorScheme.surfaceContainerHighest.withOpacity(0.4),
-      child: InkWell(
-        borderRadius: BorderRadius.circular(12),
-        onTap: () => context.push('/topic/${topic.id}'),
-        child: Padding(
-          padding: const EdgeInsets.all(14),
-          child: Column(
-            crossAxisAlignment: CrossAxisAlignment.start,
-            children: [
-              Row(
+    return FutureBuilder<bool>(
+      future: DbHelper.isTopicRead(topic.id),
+      builder: (context, snapshot) {
+        final isRead = snapshot.data ?? false;
+        final titleColor = isRead ? colorScheme.outline : colorScheme.onSurface;
+        final metaColor = isRead ? colorScheme.outline.withOpacity(0.7) : colorScheme.onSurfaceVariant;
+
+        return Card(
+          margin: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
+          elevation: 0,
+          shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+          color: colorScheme.surfaceContainerHighest.withOpacity(0.4),
+          child: InkWell(
+            borderRadius: BorderRadius.circular(12),
+            onTap: () => context.push('/topic/${topic.id}'),
+            child: Padding(
+              padding: const EdgeInsets.all(14),
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
-                  GestureDetector(
-                    onTap: () => context.push('/node/${topic.node.name}'),
-                    child: Container(
-                      padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 3),
-                      decoration: BoxDecoration(
-                        color: colorScheme.primaryContainer,
-                        borderRadius: BorderRadius.circular(6),
-                      ),
-                      child: Text(
-                        topic.node.title,
-                        style: TextStyle(
-                          fontSize: 11,
-                          color: colorScheme.onPrimaryContainer,
-                          fontWeight: FontWeight.w500,
+                  Row(
+                    children: [
+                      GestureDetector(
+                        onTap: () => context.push('/node/${topic.node.name}'),
+                        child: Container(
+                          padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 3),
+                          decoration: BoxDecoration(
+                            color: isRead
+                                ? colorScheme.surfaceContainerHighest
+                                : colorScheme.primaryContainer,
+                            borderRadius: BorderRadius.circular(6),
+                          ),
+                          child: Text(
+                            topic.node.title,
+                            style: TextStyle(
+                              fontSize: 11,
+                              color: isRead ? colorScheme.outline : colorScheme.onPrimaryContainer,
+                              fontWeight: FontWeight.w500,
+                            ),
+                          ),
                         ),
                       ),
-                    ),
-                  ),
-                  const SizedBox(width: 8),
-                  GestureDetector(
-                    onTap: () => context.push('/member/${topic.member.username}'),
-                    child: Text(
-                      topic.member.username,
-                      style: TextStyle(
-                        fontSize: 12,
-                        color: colorScheme.onSurfaceVariant,
+                      const SizedBox(width: 8),
+                      Expanded(
+                        child: GestureDetector(
+                          onTap: () => context.push('/member/${topic.member.username}'),
+                          child: Text(
+                            topic.member.username,
+                            style: TextStyle(fontSize: 12, color: metaColor),
+                            overflow: TextOverflow.ellipsis,
+                          ),
+                        ),
                       ),
-                      overflow: TextOverflow.ellipsis,
-                    ),
+                      Text(
+                        _formatTime(topic.lastTouched),
+                        style: TextStyle(fontSize: 11, color: metaColor),
+                      ),
+                    ],
                   ),
+                  const SizedBox(height: 10),
                   Text(
-                    _formatTime(topic.lastTouched),
-                    style: TextStyle(
-                      fontSize: 11,
-                      color: colorScheme.outline,
+                    topic.title,
+                    style: theme.textTheme.titleMedium?.copyWith(
+                      fontWeight: isRead ? FontWeight.w400 : FontWeight.w600,
+                      height: 1.4,
+                      color: titleColor,
                     ),
+                    maxLines: 2,
+                    overflow: TextOverflow.ellipsis,
+                  ),
+                  const SizedBox(height: 8),
+                  Row(
+                    children: [
+                      Icon(
+                        Icons.chat_bubble_outline,
+                        size: 14,
+                        color: metaColor,
+                      ),
+                      const SizedBox(width: 4),
+                      Text(
+                        '${topic.replies} 回复',
+                        style: TextStyle(fontSize: 12, color: metaColor),
+                      ),
+                      if (topic.lastReplyBy != null) ...[
+                        const SizedBox(width: 8),
+                        Text(
+                          '最后回复: ${topic.lastReplyBy}',
+                          style: TextStyle(fontSize: 12, color: metaColor),
+                        ),
+                      ],
+                    ],
                   ),
                 ],
               ),
-              const SizedBox(height: 10),
-              Text(
-                topic.title,
-                style: theme.textTheme.titleMedium?.copyWith(
-                  fontWeight: FontWeight.w600,
-                  height: 1.4,
-                ),
-                maxLines: 2,
-                overflow: TextOverflow.ellipsis,
-              ),
-              if (topic.lastReplyBy != null) ...[
-                const SizedBox(height: 8),
-                Row(
-                  children: [
-                    Icon(
-                      Icons.chat_bubble_outline,
-                      size: 14,
-                      color: colorScheme.outline,
-                    ),
-                    const SizedBox(width: 4),
-                    Text(
-                      '${topic.replies} 回复',
-                      style: TextStyle(
-                        fontSize: 12,
-                        color: colorScheme.outline,
-                      ),
-                    ),
-                    const SizedBox(width: 8),
-                    if (topic.lastReplyBy != null)
-                      Text(
-                        '最后回复: ${topic.lastReplyBy}',
-                        style: TextStyle(
-                          fontSize: 12,
-                          color: colorScheme.outline,
-                        ),
-                      ),
-                  ],
-                ),
-              ] else ...[
-                const SizedBox(height: 6),
-                Row(
-                  children: [
-                    Icon(
-                      Icons.chat_bubble_outline,
-                      size: 14,
-                      color: colorScheme.outline,
-                    ),
-                    const SizedBox(width: 4),
-                    Text(
-                      '${topic.replies} 回复',
-                      style: TextStyle(
-                        fontSize: 12,
-                        color: colorScheme.outline,
-                      ),
-                    ),
-                  ],
-                ),
-              ],
-            ],
+            ),
           ),
-        ),
-      ),
+        );
+      },
     );
   }
 }
