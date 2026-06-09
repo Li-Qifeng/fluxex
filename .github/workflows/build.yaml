@@ -137,7 +137,7 @@ jobs:
           flutter build web --release
           mkdir -p dist
           cd build/web
-          zip -r ../../../dist/fluxex-web.zip *
+          zip -r ../../dist/fluxex-web.zip *
 
       - name: Upload artifacts
         uses: actions/upload-artifact@v4
