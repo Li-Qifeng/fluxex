@@ -6,6 +6,7 @@ import '../providers/auth_provider.dart';
 import '../providers/notification_provider.dart';
 import '../providers/update_provider.dart';
 import '../utils/app_toast.dart';
+import '../utils/db_helper.dart';
 
 class ProfileScreen extends ConsumerStatefulWidget {
   const ProfileScreen({super.key});
@@ -17,6 +18,29 @@ class ProfileScreen extends ConsumerStatefulWidget {
 class _ProfileScreenState extends ConsumerState<ProfileScreen> {
   final _cookieController = TextEditingController();
   bool _showInput = false;
+  int _bookmarkCount = 0;
+  int _followedNodeCount = 0;
+  int _historyCount = 0;
+
+  @override
+  void initState() {
+    super.initState();
+    _loadCounts();
+  }
+
+  Future<void> _loadCounts() async {
+    final bookmarks = await DbHelper.getBookmarks();
+    final followed = await DbHelper.getFollowedNodes();
+    final db = await DbHelper.database;
+    final history = await db.query('browse_history');
+    if (mounted) {
+      setState(() {
+        _bookmarkCount = bookmarks.length;
+        _followedNodeCount = followed.length;
+        _historyCount = history.length;
+      });
+    }
+  }
 
   @override
   void dispose() {
@@ -126,16 +150,66 @@ class _ProfileScreenState extends ConsumerState<ProfileScreen> {
           const SizedBox(height: 32),
           const Divider(),
           const SizedBox(height: 8),
+          // 统计概览
+          Row(
+            children: [
+              Expanded(
+                child: _StatItem(
+                  count: _historyCount,
+                  label: '浏览',
+                  onTap: null,
+                ),
+              ),
+              Expanded(
+                child: _StatItem(
+                  count: _bookmarkCount,
+                  label: '书签',
+                  onTap: () => context.push('/bookmarks'),
+                ),
+              ),
+              Expanded(
+                child: _StatItem(
+                  count: _followedNodeCount,
+                  label: '关注',
+                  onTap: () => context.push('/followed-nodes'),
+                ),
+              ),
+              Expanded(
+                child: _StatItem(
+                  count: unreadCount,
+                  label: '通知',
+                  onTap: () => context.push('/notifications'),
+                ),
+              ),
+            ],
+          ),
+          const SizedBox(height: 8),
+          const Divider(),
+          const SizedBox(height: 8),
           ListTile(
             leading: const Icon(Icons.bookmark_border),
             title: const Text('书签'),
-            trailing: const Icon(Icons.chevron_right),
+            trailing: Row(
+              mainAxisSize: MainAxisSize.min,
+              children: [
+                if (_bookmarkCount > 0)
+                  Text('$_bookmarkCount', style: TextStyle(color: Theme.of(context).colorScheme.outline)),
+                const Icon(Icons.chevron_right),
+              ],
+            ),
             onTap: () => context.push('/bookmarks'),
           ),
           ListTile(
             leading: const Icon(Icons.star_border),
             title: const Text('已关注节点'),
-            trailing: const Icon(Icons.chevron_right),
+            trailing: Row(
+              mainAxisSize: MainAxisSize.min,
+              children: [
+                if (_followedNodeCount > 0)
+                  Text('$_followedNodeCount', style: TextStyle(color: Theme.of(context).colorScheme.outline)),
+                const Icon(Icons.chevron_right),
+              ],
+            ),
             onTap: () => context.push('/followed-nodes'),
           ),
           ListTile(
@@ -159,6 +233,45 @@ class _ProfileScreenState extends ConsumerState<ProfileScreen> {
           ),
           _UpdateTile(updateInfo: updateInfo),
         ],
+      ),
+    );
+  }
+}
+
+class _StatItem extends StatelessWidget {
+  final int count;
+  final String label;
+  final VoidCallback? onTap;
+
+  const _StatItem({required this.count, required this.label, this.onTap});
+
+  @override
+  Widget build(BuildContext context) {
+    final cs = Theme.of(context).colorScheme;
+    return InkWell(
+      onTap: onTap,
+      child: Padding(
+        padding: const EdgeInsets.symmetric(vertical: 12),
+        child: Column(
+          children: [
+            Text(
+              '$count',
+              style: TextStyle(
+                fontSize: 18,
+                fontWeight: FontWeight.bold,
+                color: cs.onSurface,
+              ),
+            ),
+            const SizedBox(height: 2),
+            Text(
+              label,
+              style: TextStyle(
+                fontSize: 12,
+                color: cs.outline,
+              ),
+            ),
+          ],
+        ),
       ),
     );
   }
