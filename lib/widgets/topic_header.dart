@@ -2,11 +2,13 @@ import 'package:flutter/material.dart';
 import 'package:flutter_widget_from_html_core/flutter_widget_from_html_core.dart';
 import 'package:go_router/go_router.dart';
 import '../models/topic.dart';
+import '../utils/code_highlight.dart';
 import '../utils/html_styles.dart';
 import '../utils/image_extractor.dart';
 import '../utils/link_actions.dart';
 import '../utils/time_util.dart';
 import '../widgets/cached_avatar.dart';
+import '../widgets/collapsible_content.dart';
 import 'image_gallery.dart';
 
 class TopicHeader extends StatelessWidget {
@@ -87,18 +89,22 @@ class TopicHeader extends StatelessWidget {
             // 正文内容
             if (topic.contentRendered != null && topic.contentRendered!.isNotEmpty) ...[
               const SizedBox(height: 14),
-              HtmlWidget(
+              _maybeCollapse(
                 topic.contentRendered!,
-                textStyle: TextStyle(
-                  fontSize: 15,
-                  height: 1.7,
-                  color: cs.onSurfaceVariant,
+                HtmlWidget(
+                  topic.contentRendered!,
+                  textStyle: TextStyle(
+                    fontSize: 15,
+                    height: 1.7,
+                    color: cs.onSurfaceVariant,
+                  ),
+                  customStylesBuilder: codeBlockStylesBuilder,
+                  customWidgetBuilder: codeBlockWidgetBuilder,
+                  onTapUrl: (url) {
+                    handleTapUrl(context, url);
+                    return true;
+                  },
                 ),
-                customStylesBuilder: codeBlockStylesBuilder,
-                onTapUrl: (url) {
-                  handleTapUrl(context, url);
-                  return true;
-                },
               ),
               ImageGallery(urls: extractImageUrls(topic.contentRendered!)),
             ] else if (topic.content != null && topic.content!.isNotEmpty) ...[
@@ -135,5 +141,10 @@ class TopicHeader extends StatelessWidget {
         ),
       ),
     );
+  }
+
+  Widget _maybeCollapse(String content, Widget child) {
+    if (content.length < 1200) return child;
+    return CollapsibleContent(child: child);
   }
 }

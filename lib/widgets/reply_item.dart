@@ -1,11 +1,14 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_widget_from_html_core/flutter_widget_from_html_core.dart';
 import 'package:go_router/go_router.dart';
+import 'package:share_plus/share_plus.dart';
 import '../models/reply.dart';
+import '../utils/code_highlight.dart';
 import '../utils/html_styles.dart';
 import '../utils/link_actions.dart';
 import '../utils/time_util.dart';
 import '../widgets/cached_avatar.dart';
+import '../widgets/collapsible_content.dart';
 
 class ReplyItem extends StatelessWidget {
   final Reply reply;
@@ -30,6 +33,19 @@ class ReplyItem extends StatelessWidget {
     if (rendered == null) return null;
     final exp = RegExp(r'^\s*<a[^>]*member[^>]*>@[^<]+</a>\s*');
     return rendered.replaceFirst(exp, '');
+  }
+
+  /// 提取纯文本摘要用于分享
+  String _getPlainTextSummary(String? content, String? contentRendered) {
+    String text = content ?? '';
+    if (text.isEmpty && contentRendered != null) {
+      text = contentRendered.replaceAll(RegExp(r'<[^>]*>'), ' ');
+      text = text.replaceAll(RegExp(r'\s+'), ' ').trim();
+    }
+    if (text.length > 120) {
+      text = '${text.substring(0, 120)}...';
+    }
+    return text;
   }
 
   @override
@@ -126,18 +142,22 @@ class ReplyItem extends StatelessWidget {
                 ),
               ),
             if (bodyRendered != null && bodyRendered.isNotEmpty)
-              HtmlWidget(
+              _maybeCollapse(
                 bodyRendered,
-                textStyle: TextStyle(
-                  fontSize: 14,
-                  height: 1.6,
-                  color: cs.onSurfaceVariant,
+                HtmlWidget(
+                  bodyRendered,
+                  textStyle: TextStyle(
+                    fontSize: 14,
+                    height: 1.6,
+                    color: cs.onSurfaceVariant,
+                  ),
+                  customStylesBuilder: codeBlockStylesBuilder,
+                  customWidgetBuilder: codeBlockWidgetBuilder,
+                  onTapUrl: (url) {
+                    handleTapUrl(context, url);
+                    return true;
+                  },
                 ),
-                customStylesBuilder: codeBlockStylesBuilder,
-                onTapUrl: (url) {
-                  handleTapUrl(context, url);
-                  return true;
-                },
               )
             else if (bodyContent != null)
               Text(
@@ -148,9 +168,32 @@ class ReplyItem extends StatelessWidget {
                   color: cs.onSurfaceVariant,
                 ),
               ),
+            const SizedBox(height: 8),
+            Row(
+              mainAxisAlignment: MainAxisAlignment.end,
+              children: [
+                IconButton(
+                  icon: const Icon(Icons.share_outlined, size: 18),
+                  tooltip: '分享回复',
+                  visualDensity: VisualDensity.compact,
+                  constraints: const BoxConstraints(minWidth: 32, minHeight: 32),
+                  padding: EdgeInsets.zero,
+                  onPressed: () {
+                    final summary = _getPlainTextSummary(reply.content, reply.contentRendered);
+                    final text = '@${reply.member.username}: $summary\nhttps://www.v2ex.com/t/${reply.topicId}';
+                    Share.share(text);
+                  },
+                ),
+              ],
+            ),
           ],
         ),
       ),
     );
+  }
+
+  Widget _maybeCollapse(String content, Widget child) {
+    if (content.length < 900) return child;
+    return CollapsibleContent(collapsedLines: 8, child: child);
   }
 }

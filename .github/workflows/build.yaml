@@ -41,6 +41,9 @@ jobs:
           - platform: linux
             os: ubuntu-latest
             arch: x86_64
+          - platform: web
+            os: ubuntu-latest
+            arch: x86_64
 
     steps:
       - name: Checkout
@@ -127,6 +130,14 @@ jobs:
           mkdir -p dist
           cd build/linux/x64/release/bundle
           tar czf ../../../../../dist/fluxex-linux.tar.gz *
+
+      - name: Build Web
+        if: matrix.platform == 'web'
+        run: |
+          flutter build web --release
+          mkdir -p dist
+          cd build/web
+          zip -r ../../../dist/fluxex-web.zip *
 
       - name: Upload artifacts
         uses: actions/upload-artifact@v4

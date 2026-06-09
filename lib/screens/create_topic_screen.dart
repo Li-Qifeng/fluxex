@@ -1,3 +1,4 @@
+import 'package:file_picker/file_picker.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import '../models/node.dart';
@@ -18,6 +19,7 @@ class _CreateTopicScreenState extends ConsumerState<CreateTopicScreen> {
   final _contentController = TextEditingController();
   Node? _selectedNode;
   bool _sending = false;
+  bool _uploadingImage = false;
 
   @override
   void dispose() {
@@ -54,6 +56,57 @@ class _CreateTopicScreenState extends ConsumerState<CreateTopicScreen> {
     } finally {
       if (mounted) setState(() => _sending = false);
     }
+  }
+
+
+  Future<void> _pickAndUploadImage() async {
+    if (_uploadingImage) return;
+    final result = await FilePicker.platform.pickFiles(
+      type: FileType.image,
+      withData: true,
+    );
+    final file = result?.files.single;
+    final bytes = file?.bytes;
+    if (file == null || bytes == null) return;
+
+    setState(() => _uploadingImage = true);
+    try {
+      final api = V2exApiClient();
+      final url = await api.uploadImage(
+        bytes: bytes,
+        filename: file.name,
+        mimeType: _mimeTypeFor(file.name),
+      );
+      _insertAtCursor('![${file.name}]($url)');
+      if (mounted) AppToast.success(context, '图片已插入正文');
+    } catch (e) {
+      if (mounted) AppToast.error(context, '图片上传失败: $e');
+    } finally {
+      if (mounted) setState(() => _uploadingImage = false);
+    }
+  }
+
+  void _insertAtCursor(String text) {
+    final selection = _contentController.selection;
+    final value = _contentController.text;
+    final start = selection.isValid ? selection.start : value.length;
+    final end = selection.isValid ? selection.end : value.length;
+    final prefix = value.substring(0, start);
+    final suffix = value.substring(end);
+    final needsLeadingBreak = prefix.isNotEmpty && !prefix.endsWith('\n');
+    final needsTrailingBreak = suffix.isNotEmpty && !suffix.startsWith('\n');
+    final insert = '${needsLeadingBreak ? '\n' : ''}$text${needsTrailingBreak ? '\n' : ''}';
+    _contentController.text = '$prefix$insert$suffix';
+    final cursor = prefix.length + insert.length;
+    _contentController.selection = TextSelection.collapsed(offset: cursor);
+  }
+
+  String _mimeTypeFor(String filename) {
+    final lower = filename.toLowerCase();
+    if (lower.endsWith('.png')) return 'image/png';
+    if (lower.endsWith('.webp')) return 'image/webp';
+    if (lower.endsWith('.gif')) return 'image/gif';
+    return 'image/jpeg';
   }
 
   @override
@@ -174,7 +227,7 @@ class _CreateTopicScreenState extends ConsumerState<CreateTopicScreen> {
                 textAlignVertical: TextAlignVertical.top,
                 decoration: InputDecoration(
                   labelText: '正文内容',
-                  hintText: '支持 Markdown 语法...',
+                  hintText: '支持 Markdown 语法，可添加图片...',
                   filled: true,
                   fillColor: cs.surfaceContainerHighest.withOpacity(0.4),
                   border: OutlineInputBorder(
@@ -182,6 +235,21 @@ class _CreateTopicScreenState extends ConsumerState<CreateTopicScreen> {
                     borderSide: BorderSide.none,
                   ),
                   alignLabelWithHint: true,
+                ),
+              ),
+              const SizedBox(height: 10),
+              Align(
+                alignment: Alignment.centerLeft,
+                child: OutlinedButton.icon(
+                  onPressed: _uploadingImage ? null : _pickAndUploadImage,
+                  icon: _uploadingImage
+                      ? const SizedBox(
+                          width: 16,
+                          height: 16,
+                          child: CircularProgressIndicator(strokeWidth: 2),
+                        )
+                      : const Icon(Icons.image_outlined),
+                  label: Text(_uploadingImage ? '上传中...' : '添加图片'),
                 ),
               ),
             ],

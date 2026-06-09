@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
+import '../providers/search_history_provider.dart';
 import '../providers/search_provider.dart';
 import '../widgets/state_widgets.dart';
 
@@ -21,8 +22,17 @@ class _SearchScreenState extends ConsumerState<SearchScreen> {
     super.dispose();
   }
 
+  void _doSearch(String value) {
+    final q = value.trim();
+    if (q.isEmpty) return;
+    ref.read(searchHistoryProvider.notifier).add(q);
+    setState(() => _query = q);
+  }
+
   @override
   Widget build(BuildContext context) {
+    final cs = Theme.of(context).colorScheme;
+    final history = ref.watch(searchHistoryProvider);
     final resultsAsync = _query.isNotEmpty ? ref.watch(searchProvider(_query)) : null;
 
     return Scaffold(
@@ -40,12 +50,12 @@ class _SearchScreenState extends ConsumerState<SearchScreen> {
                 },
               ),
           ],
-          onSubmitted: (value) => setState(() => _query = value.trim()),
+          onSubmitted: _doSearch,
         ),
         centerTitle: true,
       ),
       body: resultsAsync == null
-          ? const EmptyState(message: '输入关键词开始搜索')
+          ? _buildSuggestions(history, cs)
           : resultsAsync.when(
               data: (results) {
                 if (results.isEmpty) {
@@ -58,7 +68,7 @@ class _SearchScreenState extends ConsumerState<SearchScreen> {
                     return Card(
                       margin: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
                       elevation: 0,
-                      color: Theme.of(context).colorScheme.surfaceContainerHighest.withOpacity(0.4),
+                      color: cs.surfaceContainerHighest.withOpacity(0.4),
                       child: InkWell(
                         borderRadius: BorderRadius.circular(12),
                         onTap: () => context.push('/topic/${r.id}'),
@@ -72,14 +82,14 @@ class _SearchScreenState extends ConsumerState<SearchScreen> {
                                   Container(
                                     padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 3),
                                     decoration: BoxDecoration(
-                                      color: Theme.of(context).colorScheme.tertiaryContainer,
+                                      color: cs.tertiaryContainer,
                                       borderRadius: BorderRadius.circular(6),
                                     ),
                                     child: Text(
                                       '话题',
                                       style: TextStyle(
                                         fontSize: 11,
-                                        color: Theme.of(context).colorScheme.onTertiaryContainer,
+                                        color: cs.onTertiaryContainer,
                                         fontWeight: FontWeight.w500,
                                       ),
                                     ),
@@ -90,7 +100,7 @@ class _SearchScreenState extends ConsumerState<SearchScreen> {
                                       r.member,
                                       style: TextStyle(
                                         fontSize: 12,
-                                        color: Theme.of(context).colorScheme.onSurfaceVariant,
+                                        color: cs.onSurfaceVariant,
                                       ),
                                       overflow: TextOverflow.ellipsis,
                                     ),
@@ -99,7 +109,7 @@ class _SearchScreenState extends ConsumerState<SearchScreen> {
                                     '${r.replies} 回复',
                                     style: TextStyle(
                                       fontSize: 12,
-                                      color: Theme.of(context).colorScheme.outline,
+                                      color: cs.outline,
                                     ),
                                   ),
                                 ],
@@ -121,7 +131,7 @@ class _SearchScreenState extends ConsumerState<SearchScreen> {
                                   style: TextStyle(
                                     fontSize: 13,
                                     height: 1.5,
-                                    color: Theme.of(context).colorScheme.onSurfaceVariant,
+                                    color: cs.onSurfaceVariant,
                                   ),
                                   maxLines: 3,
                                   overflow: TextOverflow.ellipsis,
@@ -141,6 +151,55 @@ class _SearchScreenState extends ConsumerState<SearchScreen> {
                 onRetry: () => ref.invalidate(searchProvider(_query)),
               ),
             ),
+    );
+  }
+
+  Widget _buildSuggestions(List<String> history, ColorScheme cs) {
+    return ListView(
+      padding: const EdgeInsets.all(16),
+      children: [
+        if (history.isNotEmpty) ...[
+          Row(
+            mainAxisAlignment: MainAxisAlignment.spaceBetween,
+            children: [
+              Text('搜索历史', style: Theme.of(context).textTheme.titleSmall),
+              TextButton(
+                onPressed: () => ref.read(searchHistoryProvider.notifier).clear(),
+                child: const Text('清除'),
+              ),
+            ],
+          ),
+          const SizedBox(height: 6),
+          Wrap(
+            spacing: 8,
+            runSpacing: 8,
+            children: history.map((q) => ActionChip(
+              label: Text(q),
+              visualDensity: VisualDensity.compact,
+              onPressed: () {
+                _controller.text = q;
+                _doSearch(q);
+              },
+            )).toList(),
+          ),
+          const SizedBox(height: 20),
+        ],
+        Text('热门搜索', style: Theme.of(context).textTheme.titleSmall),
+        const SizedBox(height: 6),
+        Wrap(
+          spacing: 8,
+          runSpacing: 8,
+          children: defaultHotSearches.map((q) => InputChip(
+            label: Text(q),
+            visualDensity: VisualDensity.compact,
+            selectedColor: cs.primaryContainer,
+            onPressed: () {
+              _controller.text = q;
+              _doSearch(q);
+            },
+          )).toList(),
+        ),
+      ],
     );
   }
 }

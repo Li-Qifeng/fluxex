@@ -1,3 +1,5 @@
+import 'dart:typed_data';
+
 import 'package:dio/dio.dart';
 import 'package:dio_cookie_manager/dio_cookie_manager.dart';
 import 'package:cookie_jar/cookie_jar.dart';
@@ -149,6 +151,57 @@ class V2exApiClient {
     if (response.statusCode != 200) {
       throw Exception('回帖失败: ${response.statusCode}');
     }
+  }
+
+
+  Future<String> uploadImage({
+    required Uint8List bytes,
+    required String filename,
+    String? mimeType,
+  }) async {
+    final response = await _dio.post(
+      'https://www.v2ex.com/i/upload',
+      queryParameters: {'qqfile': filename},
+      data: bytes,
+      options: Options(
+        contentType: mimeType ?? 'application/octet-stream',
+        headers: {
+          'Referer': 'https://www.v2ex.com/new',
+          'X-Requested-With': 'XMLHttpRequest',
+        },
+        validateStatus: (s) => s != null && s < 500,
+      ),
+    );
+
+    if (response.statusCode == 403) {
+      throw Exception('图片上传需要登录 V2EX');
+    }
+    if (response.statusCode == null || response.statusCode! >= 300) {
+      throw Exception('图片上传失败: ${response.statusCode}');
+    }
+
+    final data = response.data;
+    if (data is Map) {
+      final candidates = [
+        data['url'],
+        data['image'],
+        data['src'],
+        data['link'],
+        data['path'],
+      ];
+      for (final value in candidates) {
+        if (value is String && value.isNotEmpty) {
+          return value.startsWith('http') ? value : 'https://www.v2ex.com$value';
+        }
+      }
+    }
+    if (data is String) {
+      final url = RegExp(r'https?://[^\s"]+').firstMatch(data)?.group(0);
+      if (url != null) return url;
+      final v2exPath = RegExp(r'/(?:i|static)/[^\s"]+').firstMatch(data)?.group(0);
+      if (v2exPath != null) return 'https://www.v2ex.com$v2exPath';
+    }
+    throw Exception('图片上传响应无法解析');
   }
 
   Future<void> createTopic(String nodeName, String title, String content) async {

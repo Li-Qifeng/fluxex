@@ -2,6 +2,7 @@ import 'package:dynamic_color/dynamic_color.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
+import 'package:phosphor_flutter/phosphor_flutter.dart';
 import 'providers/notification_provider.dart';
 import 'providers/settings_provider.dart';
 import 'screens/home_screen.dart';
@@ -203,24 +204,24 @@ class ScaffoldWithNavBar extends ConsumerWidget {
           if (index == 3) context.go('/profile');
         },
         destinations: [
-          const NavigationDestination(
-            icon: Icon(Icons.home_outlined),
-            selectedIcon: Icon(Icons.home),
+          NavigationDestination(
+            icon: Icon(PhosphorIcons.house()),
+            selectedIcon: Icon(PhosphorIconsFill.house),
             label: '首页',
           ),
-          const NavigationDestination(
-            icon: Icon(Icons.account_tree_outlined),
-            selectedIcon: Icon(Icons.account_tree),
+          NavigationDestination(
+            icon: Icon(PhosphorIcons.treeStructure()),
+            selectedIcon: Icon(PhosphorIconsFill.treeStructure),
             label: '节点',
           ),
-          const NavigationDestination(
-            icon: Icon(Icons.search_outlined),
-            selectedIcon: Icon(Icons.search),
+          NavigationDestination(
+            icon: Icon(PhosphorIcons.magnifyingGlass()),
+            selectedIcon: Icon(PhosphorIconsFill.magnifyingGlass),
             label: '搜索',
           ),
           NavigationDestination(
-            icon: notificationIcon(Icons.person_outline),
-            selectedIcon: notificationIcon(Icons.person),
+            icon: notificationIcon(PhosphorIcons.user()),
+            selectedIcon: notificationIcon(PhosphorIconsFill.user),
             label: '账号',
           ),
         ],

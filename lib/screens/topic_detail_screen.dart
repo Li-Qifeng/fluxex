@@ -1,6 +1,7 @@
 import 'dart:async';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:share_plus/share_plus.dart';
 import 'package:url_launcher/url_launcher.dart';
 import '../models/reply.dart';
 import '../providers/topic_detail_provider.dart';
@@ -240,6 +241,14 @@ class _TopicDetailScreenState extends ConsumerState<TopicDetailScreen> {
                 if (await canLaunchUrl(url)) {
                   await launchUrl(url, mode: LaunchMode.externalApplication);
                 }
+              },
+            ),
+            IconButton(
+              icon: const Icon(Icons.share),
+              tooltip: '分享',
+              onPressed: () async {
+                final topic = await ref.read(topicDetailProvider(widget.topicId).future);
+                await Share.share('${topic.title} https://www.v2ex.com/t/${widget.topicId}');
               },
             ),
           ] else if (_searchController.text.isNotEmpty)
