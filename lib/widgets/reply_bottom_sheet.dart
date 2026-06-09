@@ -5,8 +5,15 @@ import '../utils/app_toast.dart';
 
 class ReplyBottomSheet extends ConsumerStatefulWidget {
   final int topicId;
+  final String? initialText;
+  final Set<String> participants;
 
-  const ReplyBottomSheet({super.key, required this.topicId});
+  const ReplyBottomSheet({
+    super.key,
+    required this.topicId,
+    this.initialText,
+    this.participants = const {},
+  });
 
   @override
   ConsumerState<ReplyBottomSheet> createState() => _ReplyBottomSheetState();
@@ -14,12 +21,100 @@ class ReplyBottomSheet extends ConsumerStatefulWidget {
 
 class _ReplyBottomSheetState extends ConsumerState<ReplyBottomSheet> {
   final _controller = TextEditingController();
+  final _focusNode = FocusNode();
   bool _sending = false;
+  List<String> _mentionSuggestions = [];
+  int? _mentionStart;
+
+  @override
+  void initState() {
+    super.initState();
+    if (widget.initialText != null) {
+      _controller.text = widget.initialText!;
+      _controller.selection = TextSelection.collapsed(
+        offset: widget.initialText!.length,
+      );
+    }
+    _controller.addListener(_onTextChanged);
+  }
 
   @override
   void dispose() {
+    _controller.removeListener(_onTextChanged);
     _controller.dispose();
+    _focusNode.dispose();
     super.dispose();
+  }
+
+  void _onTextChanged() {
+    final text = _controller.text;
+    final selection = _controller.selection;
+
+    if (!selection.isValid || selection.start != selection.end) {
+      setState(() {
+        _mentionSuggestions = [];
+        _mentionStart = null;
+      });
+      return;
+    }
+
+    final cursor = selection.start;
+    if (cursor <= 0) {
+      setState(() {
+        _mentionSuggestions = [];
+        _mentionStart = null;
+      });
+      return;
+    }
+
+    int? atIndex;
+    for (int i = cursor - 1; i >= 0; i--) {
+      if (text[i] == '@') {
+        atIndex = i;
+        break;
+      }
+      if (text[i] == ' ' || text[i] == '\n') break;
+    }
+
+    if (atIndex != null) {
+      final query = text.substring(atIndex + 1, cursor).toLowerCase();
+      if (query.contains(' ') || query.contains('\n')) {
+        setState(() {
+          _mentionSuggestions = [];
+          _mentionStart = null;
+        });
+        return;
+      }
+      final suggestions = widget.participants
+          .where((name) => name.toLowerCase().contains(query))
+          .toList();
+      setState(() {
+        _mentionStart = atIndex;
+        _mentionSuggestions = suggestions;
+      });
+    } else {
+      setState(() {
+        _mentionSuggestions = [];
+        _mentionStart = null;
+      });
+    }
+  }
+
+  void _insertMention(String username) {
+    if (_mentionStart == null) return;
+    final text = _controller.text;
+    final cursor = _controller.selection.start;
+    final before = text.substring(0, _mentionStart);
+    final after = text.substring(cursor);
+    final insert = '@$username ';
+    _controller.text = before + insert + after;
+    _controller.selection = TextSelection.collapsed(
+      offset: before.length + insert.length,
+    );
+    setState(() {
+      _mentionSuggestions = [];
+      _mentionStart = null;
+    });
   }
 
   Future<void> _send() async {
@@ -99,11 +194,46 @@ class _ReplyBottomSheetState extends ConsumerState<ReplyBottomSheet> {
               ),
             ),
             const Divider(height: 1),
+            // @用户建议
+            if (_mentionSuggestions.isNotEmpty)
+              Container(
+                constraints: const BoxConstraints(maxHeight: 52),
+                padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 4),
+                child: ListView.builder(
+                  scrollDirection: Axis.horizontal,
+                  itemCount: _mentionSuggestions.length,
+                  itemBuilder: (context, index) {
+                    final name = _mentionSuggestions[index];
+                    return Padding(
+                      padding: const EdgeInsets.only(right: 8),
+                      child: ActionChip(
+                        avatar: CircleAvatar(
+                          radius: 10,
+                          backgroundColor: cs.primaryContainer,
+                          child: Text(
+                            name[0].toUpperCase(),
+                            style: TextStyle(
+                              fontSize: 10,
+                              color: cs.onPrimaryContainer,
+                            ),
+                          ),
+                        ),
+                        label: Text(name),
+                        padding: EdgeInsets.zero,
+                        visualDensity: VisualDensity.compact,
+                        onPressed: () => _insertMention(name),
+                      ),
+                    );
+                  },
+                ),
+              ),
+            if (_mentionSuggestions.isNotEmpty) const Divider(height: 1),
             // 输入区
             ConstrainedBox(
               constraints: const BoxConstraints(minHeight: 120, maxHeight: 320),
               child: TextField(
                 controller: _controller,
+                focusNode: _focusNode,
                 decoration: const InputDecoration(
                   hintText: '输入回复内容...',
                   border: InputBorder.none,
@@ -112,6 +242,8 @@ class _ReplyBottomSheetState extends ConsumerState<ReplyBottomSheet> {
                 maxLines: null,
                 autofocus: true,
                 textAlignVertical: TextAlignVertical.top,
+                textInputAction: TextInputAction.send,
+                onSubmitted: (value) => _send(),
               ),
             ),
           ],

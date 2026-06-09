@@ -25,6 +25,9 @@ class TopicDetailScreen extends ConsumerStatefulWidget {
 class _TopicDetailScreenState extends ConsumerState<TopicDetailScreen> {
   final ScrollController _scrollController = ScrollController();
   final TextEditingController _searchController = TextEditingController();
+  final Map<int, GlobalKey> _replyKeys = {};
+  final Set<String> _participantNames = {};
+
   int _currentFloor = 0;
   int _totalReplies = 0;
   Timer? _saveTimer;
@@ -44,6 +47,7 @@ class _TopicDetailScreenState extends ConsumerState<TopicDetailScreen> {
     _scrollController.dispose();
     _searchController.dispose();
     _saveTimer?.cancel();
+    _replyKeys.clear();
     super.dispose();
   }
 
@@ -75,20 +79,33 @@ class _TopicDetailScreenState extends ConsumerState<TopicDetailScreen> {
 
   void _onScroll() {
     if (!mounted || _totalReplies == 0 || _isSearching) return;
-    const headerEstimate = 300.0;
-    const itemEstimate = 120.0;
-    final offset = _scrollController.offset;
-    int floor;
-    if (offset < headerEstimate) {
-      floor = 0;
-    } else {
-      floor = ((offset - headerEstimate) / itemEstimate).floor() + 1;
-      floor = floor.clamp(1, _totalReplies);
+
+    final viewportCenter = MediaQuery.of(context).size.height / 2;
+
+    int? closestFloor;
+    double minDistance = double.infinity;
+
+    for (final entry in _replyKeys.entries) {
+      final keyContext = entry.value.currentContext;
+      if (keyContext == null) continue;
+      final renderBox = keyContext.findRenderObject() as RenderBox?;
+      if (renderBox == null) continue;
+
+      final offset = renderBox.localToGlobal(Offset.zero);
+      final itemCenter = offset.dy + renderBox.size.height / 2;
+      final distance = (itemCenter - viewportCenter).abs();
+
+      if (distance < minDistance) {
+        minDistance = distance;
+        closestFloor = entry.key;
+      }
     }
+
+    final floor = closestFloor ?? 0;
     if (floor != _currentFloor) {
       setState(() => _currentFloor = floor);
     }
-    // Debounce save position every 1.5s after scroll stops
+
     _saveTimer?.cancel();
     _saveTimer = Timer(const Duration(milliseconds: 1500), () {
       if (!mounted || _currentFloor <= 0) return;
@@ -96,62 +113,118 @@ class _TopicDetailScreenState extends ConsumerState<TopicDetailScreen> {
         widget.topicId,
         '',
         lastFloor: _currentFloor,
-        scrollOffset: offset.toInt(),
+        scrollOffset: _scrollController.offset.toInt(),
       );
     });
   }
 
   Future<void> _jumpToFloor(int floor) async {
     if (floor < 1 || floor > _totalReplies) return;
-    const headerEstimate = 300.0;
-    const itemEstimate = 120.0;
-    final offset = headerEstimate + (floor - 1) * itemEstimate;
-    if (_scrollController.hasClients) {
-      await _scrollController.animateTo(
-        offset,
-        duration: const Duration(milliseconds: 400),
+    final key = _replyKeys[floor];
+    if (key?.currentContext != null) {
+      await Scrollable.ensureVisible(
+        key!.currentContext!,
+        duration: const Duration(milliseconds: 300),
         curve: Curves.easeInOut,
+        alignment: 0.1,
       );
     }
   }
 
-  Future<void> _showFloorPicker() async {
-    final controller = TextEditingController();
-    final confirmed = await showDialog<bool>(
+  void _showFloorPicker() {
+    showModalBottomSheet(
       context: context,
-      builder: (context) => AlertDialog(
-        title: const Text('跳转到楼层'),
-        content: TextField(
-          controller: controller,
-          keyboardType: TextInputType.number,
-          autofocus: true,
-          decoration: InputDecoration(
-            hintText: '1 ~ $_totalReplies',
-            border: const OutlineInputBorder(),
-          ),
-        ),
-        actions: [
-          TextButton(
-            onPressed: () => Navigator.pop(context, false),
-            child: const Text('取消'),
-          ),
-          FilledButton(
-            onPressed: () => Navigator.pop(context, true),
-            child: const Text('跳转'),
-          ),
-        ],
+      isScrollControlled: true,
+      builder: (context) => DraggableScrollableSheet(
+        initialChildSize: 0.5,
+        minChildSize: 0.3,
+        maxChildSize: 0.8,
+        expand: false,
+        builder: (context, scrollController) {
+          return Column(
+            children: [
+              Container(
+                margin: const EdgeInsets.only(top: 8, bottom: 4),
+                width: 36,
+                height: 4,
+                decoration: BoxDecoration(
+                  color: Theme.of(context).colorScheme.outline.withOpacity(0.4),
+                  borderRadius: BorderRadius.circular(2),
+                ),
+              ),
+              Padding(
+                padding: const EdgeInsets.all(16),
+                child: Text(
+                  '跳转到楼层',
+                  style: Theme.of(context).textTheme.titleMedium?.copyWith(
+                    fontWeight: FontWeight.w600,
+                  ),
+                ),
+              ),
+              Expanded(
+                child: GridView.builder(
+                  controller: scrollController,
+                  padding: const EdgeInsets.symmetric(horizontal: 16),
+                  gridDelegate: const SliverGridDelegateWithFixedCrossAxisCount(
+                    crossAxisCount: 6,
+                    childAspectRatio: 1.2,
+                    crossAxisSpacing: 8,
+                    mainAxisSpacing: 8,
+                  ),
+                  itemCount: _totalReplies,
+                  itemBuilder: (context, index) {
+                    final floor = index + 1;
+                    final isCurrent = floor == _currentFloor;
+                    return FilledButton(
+                      onPressed: () {
+                        Navigator.pop(context);
+                        _jumpToFloor(floor);
+                      },
+                      style: FilledButton.styleFrom(
+                        padding: EdgeInsets.zero,
+                        backgroundColor: isCurrent
+                            ? Theme.of(context).colorScheme.primary
+                            : Theme.of(context).colorScheme.surfaceContainerHighest,
+                        foregroundColor: isCurrent
+                            ? Theme.of(context).colorScheme.onPrimary
+                            : Theme.of(context).colorScheme.onSurface,
+                      ),
+                      child: Text('$floor'),
+                    );
+                  },
+                ),
+              ),
+            ],
+          );
+        },
       ),
     );
-    if (confirmed == true) {
-      final floor = int.tryParse(controller.text.trim()) ?? 0;
-      controller.dispose();
-      if (floor >= 1 && floor <= _totalReplies) {
-        await _jumpToFloor(floor);
-      } else if (mounted) {
-        AppToast.error(context, '请输入 1~$_totalReplies 的有效楼层');
+  }
+
+  void _handleQuote(Reply reply) {
+    final text = '@${reply.member.username} ';
+    _openReplySheet(initialText: text);
+  }
+
+  Future<void> _openReplySheet({String? initialText}) async {
+    final result = await showModalBottomSheet<bool>(
+      context: context,
+      isScrollControlled: true,
+      backgroundColor: Theme.of(context).colorScheme.surface,
+      shape: const RoundedRectangleBorder(
+        borderRadius: BorderRadius.vertical(top: Radius.circular(20)),
+      ),
+      builder: (context) => ReplyBottomSheet(
+        topicId: widget.topicId,
+        initialText: initialText,
+        participants: _participantNames,
+      ),
+    );
+    if (result == true) {
+      ref.invalidate(topicRepliesProvider(widget.topicId));
+      if (mounted) {
+        AppToast.success(context, '回复成功');
       }
-    } else {
-      controller.dispose();
     }
   }
 
@@ -296,12 +369,28 @@ class _TopicDetailScreenState extends ConsumerState<TopicDetailScreen> {
                         child: EmptyState(message: '未找到匹配的回复'),
                       );
                     }
+                    // Populate participant names for @mention
+                    _participantNames.clear();
+                    for (final r in replies) {
+                      _participantNames.add((r as Reply).member.username);
+                    }
+                    _replyKeys.clear();
+                    for (final f in filtered) {
+                      _replyKeys.putIfAbsent(f.floor, () => GlobalKey());
+                    }
+
                     return SliverList.builder(
                       itemCount: filtered.length,
-                      itemBuilder: (context, index) => ReplyItem(
-                        reply: filtered[index].reply,
-                        floor: filtered[index].floor,
-                      ),
+                      itemBuilder: (context, index) {
+                        final floor = filtered[index].floor;
+                        final reply = filtered[index].reply;
+                        return ReplyItem(
+                          key: _replyKeys[floor],
+                          reply: reply,
+                          floor: floor,
+                          onQuote: () => _handleQuote(reply),
+                        );
+                      },
                     );
                   },
                   loading: () => const SliverToBoxAdapter(
@@ -333,33 +422,26 @@ class _TopicDetailScreenState extends ConsumerState<TopicDetailScreen> {
             right: 16,
             child: FloatingActionButton(
               heroTag: 'reply',
-              onPressed: () async {
-                final result = await showModalBottomSheet<bool>(
-                  context: context,
-                  isScrollControlled: true,
-                  backgroundColor: Theme.of(context).colorScheme.surface,
-                  shape: const RoundedRectangleBorder(
-                    borderRadius: BorderRadius.vertical(top: Radius.circular(20)),
-                  ),
-                  builder: (context) => ReplyBottomSheet(topicId: widget.topicId),
-                );
-                if (result == true) {
-                  ref.invalidate(topicRepliesProvider(widget.topicId));
-                  if (mounted) {
-                    AppToast.success(context, '回复成功');
-                  }
-                }
-              },
+              onPressed: () => _openReplySheet(),
               child: const Icon(Icons.reply),
             ),
           ),
-          // 楼层进度胶囊（搜索时隐藏）
           if (_totalReplies > 0 && !_isSearching)
             Positioned(
               bottom: 88,
               right: 16,
               child: GestureDetector(
                 onTap: _showFloorPicker,
+                onHorizontalDragUpdate: (details) {
+                  if (_totalReplies <= 1) return;
+                  const sensitivity = 30.0;
+                  final deltaFloor = (-details.delta.dx / sensitivity).round();
+                  if (deltaFloor == 0) return;
+                  final target = (_currentFloor + deltaFloor).clamp(1, _totalReplies);
+                  if (target != _currentFloor) {
+                    _jumpToFloor(target);
+                  }
+                },
                 child: Container(
                   padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 8),
                   decoration: BoxDecoration(

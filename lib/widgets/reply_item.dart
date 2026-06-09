@@ -13,8 +13,9 @@ import '../widgets/collapsible_content.dart';
 class ReplyItem extends StatelessWidget {
   final Reply reply;
   final int floor;
+  final VoidCallback? onQuote;
 
-  const ReplyItem({super.key, required this.reply, required this.floor});
+  const ReplyItem({super.key, required this.reply, required this.floor, this.onQuote});
 
   /// 提取被引用的用户名前缀，如 "@username "
   String? _extractMention(String? rendered) {
@@ -172,6 +173,15 @@ class ReplyItem extends StatelessWidget {
             Row(
               mainAxisAlignment: MainAxisAlignment.end,
               children: [
+                if (onQuote != null)
+                  IconButton(
+                    icon: const Icon(Icons.format_quote_outlined, size: 18),
+                    tooltip: '引用',
+                    visualDensity: VisualDensity.compact,
+                    constraints: const BoxConstraints(minWidth: 32, minHeight: 32),
+                    padding: EdgeInsets.zero,
+                    onPressed: onQuote,
+                  ),
                 IconButton(
                   icon: const Icon(Icons.share_outlined, size: 18),
                   tooltip: '分享回复',
