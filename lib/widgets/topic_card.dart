@@ -3,6 +3,7 @@ import 'package:go_router/go_router.dart';
 import 'package:intl/intl.dart';
 import '../models/topic.dart';
 import '../utils/db_helper.dart';
+import '../widgets/cached_avatar.dart';
 
 class TopicCard extends StatelessWidget {
   final Topic topic;
@@ -68,6 +69,12 @@ class TopicCard extends StatelessWidget {
                         ),
                       ),
                       const SizedBox(width: 8),
+                      CachedAvatar(
+                        imageUrl: topic.member.avatarNormal,
+                        radius: 10,
+                        fallbackText: topic.member.username,
+                      ),
+                      const SizedBox(width: 6),
                       Expanded(
                         child: GestureDetector(
                           onTap: () => context.push('/member/${topic.member.username}'),
