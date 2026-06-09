@@ -69,10 +69,13 @@ class TopicCard extends StatelessWidget {
                         ),
                       ),
                       const SizedBox(width: 8),
-                      CachedAvatar(
-                        imageUrl: topic.member.avatarNormal,
-                        radius: 10,
-                        fallbackText: topic.member.username,
+                      Hero(
+                        tag: 'member-avatar-${topic.member.username}',
+                        child: CachedAvatar(
+                          imageUrl: topic.member.avatarNormal,
+                          radius: 10,
+                          fallbackText: topic.member.username,
+                        ),
                       ),
                       const SizedBox(width: 6),
                       Expanded(

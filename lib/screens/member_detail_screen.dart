@@ -45,10 +45,13 @@ class MemberDetailScreen extends ConsumerWidget {
                       mainAxisAlignment: MainAxisAlignment.center,
                       children: [
                         const SizedBox(height: 40),
-                        CachedAvatar(
-                          imageUrl: member.avatarLarge,
-                          radius: 44,
-                          fallbackText: member.username,
+                        Hero(
+                          tag: 'member-avatar-${member.username}',
+                          child: CachedAvatar(
+                            imageUrl: member.avatarLarge,
+                            radius: 44,
+                            fallbackText: member.username,
+                          ),
                         ),
                         const SizedBox(height: 10),
                         Text(
