@@ -1,6 +1,6 @@
 name: fluxex
 description: "A modern, cross-platform V2EX client inspired by FluxDO."
-version: 0.1.14+14
+version: 0.1.15+15
 # pub.dev using `flutter pub publish`. This is preferred for private packages.
 publish_to: 'none' # Remove this line if you wish to publish to pub.dev
 
@@ -27,6 +27,7 @@ dependencies:
   dynamic_color: 1.7.0
   package_info_plus: ^8.0.3
   share_plus: ^10.0.0
+  gal: ^2.3.0
 
   cupertino_icons: ^1.0.8
   flutter_highlight: ^0.7.0

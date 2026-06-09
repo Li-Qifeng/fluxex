@@ -1,9 +1,12 @@
 import 'dart:async';
+import 'dart:io' show Platform, Directory, File;
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:share_plus/share_plus.dart';
 import 'package:url_launcher/url_launcher.dart';
-import 'dart:io';
+import 'package:flutter/services.dart';
+import 'package:gal/gal.dart';
+import '../models/topic.dart';
 import '../models/reply.dart';
 import '../providers/topic_detail_provider.dart';
 import '../utils/app_toast.dart';
@@ -16,6 +19,7 @@ import '../widgets/share_image_widget.dart';
 import '../widgets/state_widgets.dart';
 import '../widgets/topic_header.dart';
 import '../widgets/reply_item.dart';
+import '../widgets/glass_container.dart';
 
 class TopicDetailScreen extends ConsumerStatefulWidget {
   final int topicId;
@@ -44,49 +48,197 @@ class _TopicDetailScreenState extends ConsumerState<TopicDetailScreen> {
 
   Future<void> _shareImage() async {
     if (!mounted) return;
-    AppToast.info(context, '正在生成分享图片…');
+    final topic =
+        await ref.read(topicDetailProvider(widget.topicId).future);
+    if (!mounted) return;
+
+    ShareImageTheme imageTheme =
+        Theme.of(context).brightness == Brightness.dark
+            ? ShareImageTheme.dark
+            : ShareImageTheme.light;
+    final captureKey = GlobalKey();
+
+    await showModalBottomSheet<void>(
+      context: context,
+      isScrollControlled: true,
+      backgroundColor: Theme.of(context).colorScheme.surface,
+      shape: const RoundedRectangleBorder(
+        borderRadius: BorderRadius.vertical(top: Radius.circular(20)),
+      ),
+      builder: (sheetCtx) {
+        return StatefulBuilder(
+          builder: (sheetCtx, setSheetState) {
+            return Padding(
+              padding: EdgeInsets.only(
+                bottom: MediaQuery.of(sheetCtx).viewInsets.bottom,
+              ),
+              child: Column(
+                mainAxisSize: MainAxisSize.min,
+                children: [
+                  // ── Drag handle ──
+                  Container(
+                    margin: const EdgeInsets.only(top: 8, bottom: 8),
+                    width: 36,
+                    height: 4,
+                    decoration: BoxDecoration(
+                      color: Theme.of(sheetCtx)
+                          .colorScheme
+                          .outline
+                          .withOpacity(0.4),
+                      borderRadius: BorderRadius.circular(2),
+                    ),
+                  ),
+                  // ── Header: title + theme toggle ──
+                  Padding(
+                    padding: const EdgeInsets.symmetric(horizontal: 16),
+                    child: Row(
+                      children: [
+                        Text(
+                          '分享图片',
+                          style: Theme.of(sheetCtx)
+                              .textTheme
+                              .titleMedium
+                              ?.copyWith(fontWeight: FontWeight.w600),
+                        ),
+                        const Spacer(),
+                        SegmentedButton<ShareImageTheme>(
+                          segments: const [
+                            ButtonSegment(
+                              value: ShareImageTheme.light,
+                              icon: Icon(Icons.light_mode, size: 18),
+                            ),
+                            ButtonSegment(
+                              value: ShareImageTheme.dark,
+                              icon: Icon(Icons.dark_mode, size: 18),
+                            ),
+                          ],
+                          selected: {imageTheme},
+                          onSelectionChanged: (set) {
+                            setSheetState(() => imageTheme = set.first);
+                          },
+                          showSelectedIcon: false,
+                          style: ButtonStyle(
+                            visualDensity: VisualDensity.compact,
+                            tapTargetSize:
+                                MaterialTapTargetSize.shrinkWrap,
+                          ),
+                        ),
+                      ],
+                    ),
+                  ),
+                  const SizedBox(height: 12),
+                  // ── Preview ──
+                  ConstrainedBox(
+                    constraints: BoxConstraints(
+                      maxHeight:
+                          MediaQuery.of(sheetCtx).size.height * 0.5,
+                    ),
+                    child: SingleChildScrollView(
+                      padding:
+                          const EdgeInsets.symmetric(horizontal: 16),
+                      child: ClipRRect(
+                        borderRadius: BorderRadius.circular(12),
+                        child: ShareImageWidget(
+                          topic: topic,
+                          boundaryKey: captureKey,
+                          theme: imageTheme,
+                        ),
+                      ),
+                    ),
+                  ),
+                  const SizedBox(height: 16),
+                  // ── Action buttons ──
+                  SafeArea(
+                    child: Padding(
+                      padding: const EdgeInsets.fromLTRB(16, 0, 16, 16),
+                      child: Row(
+                        children: [
+                          Expanded(
+                            child: OutlinedButton.icon(
+                              onPressed: () => _captureAndSave(
+                                  sheetCtx, captureKey, topic),
+                              icon: const Icon(Icons.save_alt, size: 18),
+                              label: const Text('保存到相册'),
+                            ),
+                          ),
+                          const SizedBox(width: 8),
+                          Expanded(
+                            child: OutlinedButton.icon(
+                              onPressed: () => _captureAndCopy(
+                                  sheetCtx, captureKey, topic),
+                              icon: const Icon(Icons.copy, size: 18),
+                              label: const Text('复制到剪贴板'),
+                            ),
+                          ),
+                          const SizedBox(width: 8),
+                          Expanded(
+                            child: FilledButton.icon(
+                              onPressed: () => _captureAndShare(
+                                  sheetCtx, captureKey, topic),
+                              icon: const Icon(Icons.share, size: 18),
+                              label: const Text('分享'),
+                            ),
+                          ),
+                        ],
+                      ),
+                    ),
+                  ),
+                ],
+              ),
+            );
+          },
+        );
+      },
+    );
+  }
+
+  Future<void> _captureAndSave(
+      BuildContext ctx, GlobalKey key, Topic topic) async {
     try {
-      final topic =
-          await ref.read(topicDetailProvider(widget.topicId).future);
-      final captureKey = GlobalKey();
-      final isDark =
-          Theme.of(context).brightness == Brightness.dark;
+      final bytes = await captureWidget(key);
+      Navigator.pop(ctx);
+      await Gal.putImageBytes(bytes);
+      if (mounted) AppToast.success(context, '已保存到相册');
+    } catch (e) {
+      try {
+        Navigator.pop(ctx);
+      } catch (_) {}
+      if (mounted) AppToast.error(context, '保存失败: $e');
+    }
+  }
 
-      // Build the share widget in an overlay entry for capture.
-      final overlay = Overlay.of(context);
-      late OverlayEntry entry;
-      entry = OverlayEntry(
-        builder: (_) => Positioned(
-          left: -10000,
-          top: -10000,
-          child: ShareImageWidget(
-            topic: topic,
-            boundaryKey: captureKey,
-            theme: isDark
-                ? ShareImageTheme.dark
-                : ShareImageTheme.light,
-          ),
-        ),
-      );
-      overlay.insert(entry);
+  Future<void> _captureAndCopy(
+      BuildContext ctx, GlobalKey key, Topic topic) async {
+    try {
+      final bytes = await captureWidget(key);
+      Navigator.pop(ctx);
+      final tempDir = Directory.systemTemp.createTempSync('fluxex_clip');
+      final file = File('${tempDir.path}/v2ex_${topic.id}.png');
+      await file.writeAsBytes(bytes);
+      await Clipboard.setData(ClipboardData(text: file.path));
+      if (mounted) AppToast.success(context, '图片已复制到剪贴板');
+    } catch (e) {
+      try {
+        Navigator.pop(ctx);
+      } catch (_) {}
+      if (mounted) AppToast.error(context, '复制失败: $e');
+    }
+  }
 
-      // Wait for the widget to be laid out and painted.
-      await Future.delayed(const Duration(milliseconds: 500));
-
-      final bytes = await captureWidget(captureKey);
-      entry.remove();
-
+  Future<void> _captureAndShare(
+      BuildContext ctx, GlobalKey key, Topic topic) async {
+    try {
+      final bytes = await captureWidget(key);
+      Navigator.pop(ctx);
       final tempDir = Directory.systemTemp.createTempSync('fluxex_share');
       final file = File('${tempDir.path}/v2ex_${topic.id}.png');
       await file.writeAsBytes(bytes);
-
-      if (mounted) {
-        await Share.shareXFiles([XFile(file.path)]);
-      }
+      if (mounted) await Share.shareXFiles([XFile(file.path)]);
     } catch (e) {
-      if (mounted) {
-        AppToast.error(context, '分享图片生成失败: $e');
-      }
+      try {
+        Navigator.pop(ctx);
+      } catch (_) {}
+      if (mounted) AppToast.error(context, '分享失败: $e');
     }
   }
 
@@ -385,48 +537,36 @@ class _TopicDetailScreenState extends ConsumerState<TopicDetailScreen> {
               tooltip: '搜索回复',
               onPressed: () => setState(() => _isSearching = true),
             ),
-            IconButton(
-              icon: const Icon(Icons.bookmark_border),
-              tooltip: '收藏',
-              onPressed: () async {
-                final topic = await ref.read(topicDetailProvider(widget.topicId).future);
-                final isBookmarked = await DbHelper.isBookmarked(widget.topicId);
-                if (isBookmarked) {
-                  await DbHelper.removeBookmark(widget.topicId);
-                  if (context.mounted) {
-                    AppToast.info(context, '已取消收藏');
-                  }
-                } else {
-                  await DbHelper.addBookmark(widget.topicId, topic.title);
-                  if (context.mounted) {
-                    AppToast.success(context, '已收藏');
-                  }
-                }
-              },
-            ),
-            IconButton(
-              icon: const Icon(Icons.open_in_browser),
-              tooltip: '在网页中打开',
-              onPressed: () async {
-                final url = Uri.parse('https://www.v2ex.com/t/${widget.topicId}');
-                if (await canLaunchUrl(url)) {
-                  await launchUrl(url, mode: LaunchMode.externalApplication);
-                }
-              },
-            ),
-            IconButton(
-              icon: const Icon(Icons.share),
-              tooltip: '分享',
-              onPressed: () async {
-                final topic = await ref.read(topicDetailProvider(widget.topicId).future);
-                await Share.share('${topic.title} https://www.v2ex.com/t/${widget.topicId}');
-              },
-            ),
             PopupMenuButton<String>(
               icon: const Icon(Icons.more_vert),
               tooltip: '更多',
-              onSelected: (value) {
+              onSelected: (value) async {
                 switch (value) {
+                  case 'bookmark':
+                    final topic = await ref.read(topicDetailProvider(widget.topicId).future);
+                    final isBookmarked = await DbHelper.isBookmarked(widget.topicId);
+                    if (isBookmarked) {
+                      await DbHelper.removeBookmark(widget.topicId);
+                      if (context.mounted) {
+                        AppToast.info(context, '已取消收藏');
+                      }
+                    } else {
+                      await DbHelper.addBookmark(widget.topicId, topic.title);
+                      if (context.mounted) {
+                        AppToast.success(context, '已收藏');
+                      }
+                    }
+                    break;
+                  case 'share':
+                    final topic = await ref.read(topicDetailProvider(widget.topicId).future);
+                    await Share.share('${topic.title} https://www.v2ex.com/t/${widget.topicId}');
+                    break;
+                  case 'open_in_browser':
+                    final url = Uri.parse('https://www.v2ex.com/t/${widget.topicId}');
+                    if (await canLaunchUrl(url)) {
+                      await launchUrl(url, mode: LaunchMode.externalApplication);
+                    }
+                    break;
                   case 'share_image':
                     _shareImage();
                     break;
@@ -438,8 +578,36 @@ class _TopicDetailScreenState extends ConsumerState<TopicDetailScreen> {
                     break;
                 }
               },
-              itemBuilder: (_) => const [
-                PopupMenuItem(
+              itemBuilder: (_) => [
+                const PopupMenuItem(
+                  value: 'bookmark',
+                  child: ListTile(
+                    leading: Icon(Icons.bookmark_border),
+                    title: Text('收藏'),
+                    dense: true,
+                    contentPadding: EdgeInsets.zero,
+                  ),
+                ),
+                const PopupMenuItem(
+                  value: 'share',
+                  child: ListTile(
+                    leading: Icon(Icons.share),
+                    title: Text('分享'),
+                    dense: true,
+                    contentPadding: EdgeInsets.zero,
+                  ),
+                ),
+                const PopupMenuItem(
+                  value: 'open_in_browser',
+                  child: ListTile(
+                    leading: Icon(Icons.open_in_browser),
+                    title: Text('在浏览器中打开'),
+                    dense: true,
+                    contentPadding: EdgeInsets.zero,
+                  ),
+                ),
+                const PopupMenuDivider(),
+                const PopupMenuItem(
                   value: 'share_image',
                   child: ListTile(
                     leading: Icon(Icons.image_outlined),
@@ -448,7 +616,7 @@ class _TopicDetailScreenState extends ConsumerState<TopicDetailScreen> {
                     contentPadding: EdgeInsets.zero,
                   ),
                 ),
-                PopupMenuItem(
+                const PopupMenuItem(
                   value: 'export_md',
                   child: ListTile(
                     leading: Icon(Icons.description_outlined),
@@ -457,10 +625,10 @@ class _TopicDetailScreenState extends ConsumerState<TopicDetailScreen> {
                     contentPadding: EdgeInsets.zero,
                   ),
                 ),
-                PopupMenuItem(
+                const PopupMenuItem(
                   value: 'export_html',
                   child: ListTile(
-                    leading: Icon(Icons.html_outlined),
+                    leading: Icon(Icons.code_outlined),
                     title: Text('导出 HTML'),
                     dense: true,
                     contentPadding: EdgeInsets.zero,
@@ -623,33 +791,73 @@ class _TopicDetailScreenState extends ConsumerState<TopicDetailScreen> {
                     _jumpToFloor(target);
                   }
                 },
-                child: Container(
-                  padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 8),
-                  decoration: BoxDecoration(
-                    color: Theme.of(context).colorScheme.primaryContainer,
-                    borderRadius: BorderRadius.circular(20),
-                    boxShadow: [
-                      BoxShadow(
-                        color: Colors.black.withOpacity(0.08),
-                        blurRadius: 8,
-                        offset: const Offset(0, 2),
-                      ),
-                    ],
-                  ),
-                  child: Text(
-                    _currentFloor > 0
-                        ? '$_currentFloor / $_totalReplies'
-                        : '0 / $_totalReplies',
-                    style: TextStyle(
-                      fontSize: 13,
-                      fontWeight: FontWeight.w600,
-                      color: Theme.of(context).colorScheme.onPrimaryContainer,
-                    ),
-                  ),
+                child: _GlassCapsule(
+                  currentFloor: _currentFloor,
+                  totalReplies: _totalReplies,
                 ),
               ),
             ),
         ],
+      ),
+    );
+  }
+}
+
+/// 楼层进度胶囊 — iOS/macOS 使用液态玻璃效果
+class _GlassCapsule extends StatelessWidget {
+  final int currentFloor;
+  final int totalReplies;
+
+  const _GlassCapsule({required this.currentFloor, required this.totalReplies});
+
+  @override
+  Widget build(BuildContext context) {
+    final cs = Theme.of(context).colorScheme;
+    final isApple = Platform.isIOS || Platform.isMacOS;
+    final floorText = currentFloor > 0
+        ? '$currentFloor / $totalReplies'
+        : '0 / $totalReplies';
+
+    if (isApple) {
+      return GlassContainer(
+        blur: 20,
+        opacity: 0.25,
+        borderRadius: BorderRadius.circular(20),
+        tintColor: cs.primaryContainer,
+        child: Padding(
+          padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 8),
+          child: Text(
+            floorText,
+            style: TextStyle(
+              fontSize: 13,
+              fontWeight: FontWeight.w600,
+              color: cs.onPrimaryContainer,
+            ),
+          ),
+        ),
+      );
+    }
+
+    return Container(
+      padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 8),
+      decoration: BoxDecoration(
+        color: cs.primaryContainer,
+        borderRadius: BorderRadius.circular(20),
+        boxShadow: [
+          BoxShadow(
+            color: Colors.black.withOpacity(0.08),
+            blurRadius: 8,
+            offset: const Offset(0, 2),
+          ),
+        ],
+      ),
+      child: Text(
+        floorText,
+        style: TextStyle(
+          fontSize: 13,
+          fontWeight: FontWeight.w600,
+          color: cs.onPrimaryContainer,
+        ),
       ),
     );
   }
