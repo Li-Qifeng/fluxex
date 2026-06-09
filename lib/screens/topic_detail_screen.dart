@@ -32,7 +32,9 @@ class _TopicDetailScreenState extends ConsumerState<TopicDetailScreen> {
   int _totalReplies = 0;
   Timer? _saveTimer;
   bool _isSearching = false;
+  bool _onlyAuthor = false;
   String _searchQuery = '';
+  String? _topicAuthor;
 
   @override
   void initState() {
@@ -228,21 +230,17 @@ class _TopicDetailScreenState extends ConsumerState<TopicDetailScreen> {
     }
   }
 
-  List<({Reply reply, int floor})> _filterReplies(List<dynamic> replies) {
-    if (_searchQuery.isEmpty) {
-      return replies.indexed.map((e) => (reply: e.$2 as Reply, floor: e.$1 + 1)).toList();
+  List<({Reply reply, int floor})> _filterReplies(List<dynamic> replies, String author) {
+    var result = replies.indexed.map((e) => (reply: e.$2 as Reply, floor: e.$1 + 1)).toList();
+    if (_onlyAuthor) {
+      result = result.where((e) => e.reply.member.username == author).toList();
     }
+    if (_searchQuery.isEmpty) return result;
     final query = _searchQuery.toLowerCase();
-    final result = <({Reply reply, int floor})>[];
-    for (var i = 0; i < replies.length; i++) {
-      final r = replies[i] as Reply;
-      final content = (r.contentRendered ?? r.content ?? '').toLowerCase();
-      if (r.member.username.toLowerCase().contains(query) ||
-          content.contains(query)) {
-        result.add((reply: r, floor: i + 1));
-      }
-    }
-    return result;
+    return result.where((e) {
+      final content = (e.reply.contentRendered ?? e.reply.content ?? '').toLowerCase();
+      return e.reply.member.username.toLowerCase().contains(query) || content.contains(query);
+    }).toList();
   }
 
   @override
@@ -338,6 +336,7 @@ class _TopicDetailScreenState extends ConsumerState<TopicDetailScreen> {
         data: (topic) {
           DbHelper.addBrowseHistory(widget.topicId, topic.title);
           _totalReplies = topic.replies;
+          _topicAuthor = topic.member.username;
           return RefreshIndicator(
             onRefresh: () async {
               ref.invalidate(topicDetailProvider(widget.topicId));
@@ -356,6 +355,28 @@ class _TopicDetailScreenState extends ConsumerState<TopicDetailScreen> {
                     child: Divider(),
                   ),
                 ),
+                SliverToBoxAdapter(
+                  child: Padding(
+                    padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 4),
+                    child: Row(
+                      children: [
+                        Text(
+                          '${topic.replies} 回复',
+                          style: Theme.of(context).textTheme.titleSmall?.copyWith(
+                            fontWeight: FontWeight.w600,
+                          ),
+                        ),
+                        const Spacer(),
+                        FilterChip(
+                          label: const Text('只看楼主'),
+                          selected: _onlyAuthor,
+                          onSelected: (value) => setState(() => _onlyAuthor = value),
+                          visualDensity: VisualDensity.compact,
+                        ),
+                      ],
+                    ),
+                  ),
+                ),
                 repliesAsync.when(
                   data: (replies) {
                     if (replies.isEmpty) {
@@ -363,10 +384,18 @@ class _TopicDetailScreenState extends ConsumerState<TopicDetailScreen> {
                         child: EmptyState(message: '暂无回复'),
                       );
                     }
-                    final filtered = _filterReplies(replies);
-                    if (filtered.isEmpty && _searchQuery.isNotEmpty) {
-                      return const SliverToBoxAdapter(
-                        child: EmptyState(message: '未找到匹配的回复'),
+                    final filtered = _filterReplies(replies, topic.member.username);
+                    if (filtered.isEmpty) {
+                      String msg;
+                      if (_searchQuery.isNotEmpty) {
+                        msg = '未找到匹配的回复';
+                      } else if (_onlyAuthor) {
+                        msg = '楼主暂无回复';
+                      } else {
+                        msg = '暂无回复';
+                      }
+                      return SliverToBoxAdapter(
+                        child: EmptyState(message: msg),
                       );
                     }
                     // Populate participant names for @mention
