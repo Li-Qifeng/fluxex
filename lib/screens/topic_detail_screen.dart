@@ -5,7 +5,6 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:share_plus/share_plus.dart';
 import 'package:url_launcher/url_launcher.dart';
 import 'package:flutter/services.dart';
-import 'package:gal/gal.dart';
 import '../models/topic.dart';
 import '../models/reply.dart';
 import '../providers/topic_detail_provider.dart';
@@ -158,7 +157,7 @@ class _TopicDetailScreenState extends ConsumerState<TopicDetailScreen> {
                               onPressed: () => _captureAndSave(
                                   sheetCtx, captureKey, topic),
                               icon: const Icon(Icons.save_alt, size: 18),
-                              label: const Text('保存到相册'),
+                              label: const Text('保存/分享'),
                             ),
                           ),
                           const SizedBox(width: 8),
@@ -197,8 +196,11 @@ class _TopicDetailScreenState extends ConsumerState<TopicDetailScreen> {
     try {
       final bytes = await captureWidget(key);
       Navigator.pop(ctx);
-      await Gal.putImageBytes(bytes);
-      if (mounted) AppToast.success(context, '已保存到相册');
+      final tempDir = Directory.systemTemp.createTempSync('fluxex_save');
+      final file = File('${tempDir.path}/v2ex_${topic.id}.png');
+      await file.writeAsBytes(bytes);
+      await Share.shareXFiles([XFile(file.path)], text: '保存图片');
+      if (mounted) AppToast.success(context, '请在分享菜单中选择保存到相册');
     } catch (e) {
       try {
         Navigator.pop(ctx);
