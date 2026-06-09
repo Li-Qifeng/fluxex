@@ -1,243 +1,65 @@
 import 'dart:typed_data';
 
-import 'package:dio/dio.dart';
-import 'package:dio_cookie_manager/dio_cookie_manager.dart';
-import 'package:cookie_jar/cookie_jar.dart';
 import 'package:flutter/foundation.dart';
-import 'package:html/parser.dart' show parse;
 
+import '../services/services.dart';
+
+/// 向后兼容的 API 客户端 Facade
+/// 
+/// 新代码建议直接使用对应 Service：
+///   final topics = await TopicService().getHot();
+///   final replies = await ReplyService().getByTopic(id);
+/// 
+/// 此类将逐渐废弃，所有能力已迁移到 lib/services/。
+@Deprecated('直接使用 TopicService/ReplyService/NodeService 等')
 class V2exApiClient {
   static final V2exApiClient _instance = V2exApiClient._internal();
   factory V2exApiClient() => _instance;
 
-  late final Dio _dio;
-  final CookieJar _cookieJar = CookieJar();
+  final _topic = TopicService();
+  final _reply = ReplyService();
+  final _node = NodeService();
+  final _member = MemberService();
+  final _upload = UploadService();
+  final _notification = NotificationService();
 
-  V2exApiClient._internal() {
-    _dio = Dio(BaseOptions(
-      baseUrl: 'https://www.v2ex.com',
-      connectTimeout: const Duration(seconds: 10),
-      receiveTimeout: const Duration(seconds: 10),
-      headers: {
-        'User-Agent': 'FluxEx/0.1.6 (Flutter; Cross-platform; V2EX)',
-        'Accept': 'application/json',
-      },
-    ));
-    _dio.interceptors.add(CookieManager(_cookieJar));
-    if (kDebugMode) {
-      _dio.interceptors.add(LogInterceptor(responseBody: true));
-    }
-  }
+  V2exApiClient._internal();
 
-  Dio get dio => _dio;
+  /// 获取底层 Dio 实例（调试用）
+  dynamic get dio => ApiClient().dio;
 
-  Future<List<dynamic>> getHotTopics() async {
-    final response = await _dio.get('/api/topics/hot.json');
-    if (response.data is List) {
-      return response.data as List<dynamic>;
-    }
-    throw Exception('Invalid response format');
-  }
+  // ===== Topic =====
+  Future<List<dynamic>> getHotTopics() => _topic.getHot();
+  Future<List<dynamic>> getLatestTopics() => _topic.getLatest();
+  Future<Map<String, dynamic>> getTopicDetail(int id) => _topic.getDetail(id);
+  Future<List<dynamic>> getNodeTopics(String nodeName, {int page = 1}) =>
+      _topic.getByNode(nodeName, page: page);
+  Future<List<dynamic>> getUserTopics(String username) => _topic.getByUser(username);
+  Future<void> createTopic(String nodeName, String title, String content) =>
+      _topic.create(nodeName, title, content);
 
-  Future<List<dynamic>> getLatestTopics() async {
-    final response = await _dio.get('/api/topics/latest.json');
-    if (response.data is List) {
-      return response.data as List<dynamic>;
-    }
-    throw Exception('Invalid response format');
-  }
+  // ===== Reply =====
+  Future<List<dynamic>> getTopicReplies(int topicId) => _reply.getByTopic(topicId);
+  Future<void> replyTopic(int topicId, String content) => _reply.reply(topicId, content);
 
-  Future<Map<String, dynamic>> getTopicDetail(int id) async {
-    final response = await _dio.get('/api/topics/show.json', queryParameters: {'id': id});
-    if (response.data is List && (response.data as List).isNotEmpty) {
-      return (response.data as List).first as Map<String, dynamic>;
-    }
-    throw Exception('Topic not found');
-  }
+  // ===== Node =====
+  Future<Map<String, dynamic>> getNodeInfo(String name) => _node.getInfo(name);
+  Future<Map<String, dynamic>> getNodeInfoByName(String name) => _node.getInfo(name);
+  Future<List<dynamic>> getAllNodes() => _node.getAll();
 
-  Future<List<dynamic>> getTopicReplies(int topicId) async {
-    final response = await _dio.get('/api/replies/show.json', queryParameters: {'topic_id': topicId});
-    if (response.data is List) {
-      return response.data as List<dynamic>;
-    }
-    throw Exception('Invalid response format');
-  }
+  // ===== Member =====
+  Future<Map<String, dynamic>> getMemberInfo(String username) => _member.getInfo(username);
 
-  Future<Map<String, dynamic>> getNodeInfo(String name) async {
-    final response = await _dio.get('/api/nodes/show.json', queryParameters: {'name': name});
-    if (response.data is Map) {
-      return response.data as Map<String, dynamic>;
-    }
-    throw Exception('Invalid response format');
-  }
-
-  Future<Map<String, dynamic>> getMemberInfo(String username) async {
-    final response = await _dio.get('/api/members/show.json', queryParameters: {'username': username});
-    if (response.data is Map) {
-      return response.data as Map<String, dynamic>;
-    }
-    throw Exception('Invalid response format');
-  }
-
-  Future<Map<String, dynamic>> getNodeInfoByName(String name) async {
-    final response = await _dio.get('/api/nodes/show.json', queryParameters: {'name': name});
-    if (response.data is Map) {
-      return response.data as Map<String, dynamic>;
-    }
-    throw Exception('Invalid response format');
-  }
-
-  Future<List<dynamic>> getNodeTopics(String nodeName, {int page = 1}) async {
-    final response = await _dio.get('/api/topics/show.json', queryParameters: {
-      'node_name': nodeName,
-      'page': page,
-    });
-    if (response.data is List) {
-      return response.data as List<dynamic>;
-    }
-    throw Exception('Invalid response format');
-  }
-
-  Future<List<dynamic>> getAllNodes() async {
-    final response = await _dio.get('/api/nodes/all.json');
-    if (response.data is List) {
-      return response.data as List<dynamic>;
-    }
-    throw Exception('Invalid response format');
-  }
-
-  Future<List<dynamic>> getUserTopics(String username) async {
-    final response = await _dio.get('/api/topics/show.json', queryParameters: {'username': username});
-    if (response.data is List) {
-      return response.data as List<dynamic>;
-    }
-    throw Exception('Invalid response format');
-  }
-
-  // ---------- 网页表单操作（需要 once token） ----------
-
-  Future<String> _fetchOnce(String urlPath) async {
-    final response = await _dio.get('https://www.v2ex.com$urlPath');
-    final html = response.data as String;
-    // 尝试提取 var once = "12345";
-    final regex = RegExp(r'var once = "(\d+)"');
-    final match = regex.firstMatch(html);
-    if (match != null) return match.group(1)!;
-    // fallback: 从表单解析
-    final doc = parse(html);
-    final input = doc.querySelector('input[name="once"]');
-    if (input != null) {
-      final val = input.attributes['value'];
-      if (val != null && val.isNotEmpty) return val;
-    }
-    throw Exception('无法获取 once token');
-  }
-
-  Future<void> replyTopic(int topicId, String content) async {
-    final once = await _fetchOnce('/t/$topicId');
-    final response = await _dio.post(
-      'https://www.v2ex.com/t/$topicId/reply',
-      data: FormData.fromMap({
-        'content': content,
-        'once': once,
-      }),
-      options: Options(
-        headers: {
-          'Referer': 'https://www.v2ex.com/t/$topicId',
-        },
-        validateStatus: (s) => s != null && s < 500,
-      ),
-    );
-    if (response.statusCode != 200) {
-      throw Exception('回帖失败: ${response.statusCode}');
-    }
-  }
-
-
+  // ===== Upload =====
   Future<String> uploadImage({
     required Uint8List bytes,
     required String filename,
     String? mimeType,
-  }) async {
-    final response = await _dio.post(
-      'https://www.v2ex.com/i/upload',
-      queryParameters: {'qqfile': filename},
-      data: bytes,
-      options: Options(
-        contentType: mimeType ?? 'application/octet-stream',
-        headers: {
-          'Referer': 'https://www.v2ex.com/new',
-          'X-Requested-With': 'XMLHttpRequest',
-        },
-        validateStatus: (s) => s != null && s < 500,
-      ),
-    );
+  }) => _upload.uploadImage(bytes: bytes, filename: filename, mimeType: mimeType);
 
-    if (response.statusCode == 403) {
-      throw Exception('图片上传需要登录 V2EX');
-    }
-    if (response.statusCode == null || response.statusCode! >= 300) {
-      throw Exception('图片上传失败: ${response.statusCode}');
-    }
+  // ===== Notification =====
+  Future<int> fetchUnreadNotificationCount() => _notification.fetchUnreadCount();
 
-    final data = response.data;
-    if (data is Map) {
-      final candidates = [
-        data['url'],
-        data['image'],
-        data['src'],
-        data['link'],
-        data['path'],
-      ];
-      for (final value in candidates) {
-        if (value is String && value.isNotEmpty) {
-          return value.startsWith('http') ? value : 'https://www.v2ex.com$value';
-        }
-      }
-    }
-    if (data is String) {
-      final url = RegExp(r'https?://[^\s"]+').firstMatch(data)?.group(0);
-      if (url != null) return url;
-      final v2exPath = RegExp(r'/(?:i|static)/[^\s"]+').firstMatch(data)?.group(0);
-      if (v2exPath != null) return 'https://www.v2ex.com$v2exPath';
-    }
-    throw Exception('图片上传响应无法解析');
-  }
-
-  Future<void> createTopic(String nodeName, String title, String content) async {
-    final once = await _fetchOnce('/new/$nodeName');
-    final response = await _dio.post(
-      'https://www.v2ex.com/new/$nodeName',
-      data: FormData.fromMap({
-        'title': title,
-        'content': content,
-        'once': once,
-      }),
-      options: Options(
-        headers: {
-          'Referer': 'https://www.v2ex.com/new/$nodeName',
-        },
-        validateStatus: (s) => s != null && s < 500,
-      ),
-    );
-    if (response.statusCode != 200) {
-      throw Exception('发帖失败: ${response.statusCode}');
-    }
-  }
-
-  Future<int> fetchUnreadNotificationCount() async {
-    try {
-      final response = await _dio.get('https://www.v2ex.com/notifications');
-      final html = response.data as String;
-      final doc = parse(html);
-      final items = doc.querySelectorAll('.notification_item');
-      int unread = 0;
-      for (final item in items) {
-        if (item.classes.contains('unread')) unread++;
-      }
-      return unread;
-    } catch (_) {
-      return 0;
-    }
-  }
+  // ===== Auth (once token) =====
+  Future<String> _fetchOnce(String urlPath) => AuthService().fetchOnce(urlPath);
 }
