@@ -59,7 +59,4 @@ class V2exApiClient {
 
   // ===== Notification =====
   Future<int> fetchUnreadNotificationCount() => _notification.fetchUnreadCount();
-
-  // ===== Auth (once token) =====
-  Future<String> _fetchOnce(String urlPath) => AuthService().fetchOnce(urlPath);
 }

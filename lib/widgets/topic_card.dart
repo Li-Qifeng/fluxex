@@ -44,9 +44,22 @@ class TopicCard extends StatelessWidget {
             borderRadius: BorderRadius.circular(12),
             onTap: () => context.push('/topic/${topic.id}'),
             onLongPress: () => _showTopicMenu(context, topic),
-            child: Padding(
-              padding: const EdgeInsets.all(14),
-              child: Column(
+            child: Row(
+              children: [
+                // 未读指示条
+                AnimatedContainer(
+                  duration: const Duration(milliseconds: 300),
+                  width: isRead ? 0 : 3,
+                  margin: EdgeInsets.symmetric(vertical: isRead ? 0 : 10),
+                  decoration: BoxDecoration(
+                    color: isRead ? Colors.transparent : colorScheme.primary,
+                    borderRadius: BorderRadius.circular(1.5),
+                  ),
+                ),
+                Expanded(
+                  child: Padding(
+                    padding: const EdgeInsets.all(14),
+                    child: Column(
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
                   Row(
@@ -134,7 +147,10 @@ class TopicCard extends StatelessWidget {
               ),
             ),
           ),
-        );
+          ],
+        ),
+      ),
+    );
       },
     );
   }

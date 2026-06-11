@@ -1,11 +1,11 @@
 import 'package:flutter/material.dart';
+import 'package:flutter/cupertino.dart';
 import 'package:flutter_displaymode/flutter_displaymode.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 import 'package:dynamic_color/dynamic_color.dart';
 import 'package:google_fonts/google_fonts.dart';
 import 'package:liquid_glass_widgets/liquid_glass_widgets.dart';
-import 'providers/notification_provider.dart';
 import 'providers/settings_provider.dart';
 import 'screens/home_screen.dart';
 import 'screens/nodes_screen.dart';
@@ -55,32 +55,32 @@ final appRouter = GoRouter(
     GoRoute(
       parentNavigatorKey: _rootNavigatorKey,
       path: '/bookmarks',
-      pageBuilder: (context, state) => _slidePage(const BookmarksScreen(), state),
+      pageBuilder: (context, state) => CupertinoPage(child: const BookmarksScreen(), key: state.pageKey),
     ),
     GoRoute(
       parentNavigatorKey: _rootNavigatorKey,
       path: '/reply/:id',
       pageBuilder: (context, state) {
         final id = int.parse(state.pathParameters['id']!);
-        return _slidePage(ReplyScreen(topicId: id), state);
+        return CupertinoPage(child: ReplyScreen(topicId: id), key: state.pageKey);
       },
     ),
     GoRoute(
       parentNavigatorKey: _rootNavigatorKey,
       path: '/login',
-      pageBuilder: (context, state) => _slidePage(const LoginWebViewScreen(), state),
+      pageBuilder: (context, state) => CupertinoPage(child: const LoginWebViewScreen(), key: state.pageKey),
     ),
     GoRoute(
       parentNavigatorKey: _rootNavigatorKey,
       path: '/notifications',
-      pageBuilder: (context, state) => _slidePage(const NotificationsScreen(), state),
+      pageBuilder: (context, state) => CupertinoPage(child: const NotificationsScreen(), key: state.pageKey),
     ),
     GoRoute(
       parentNavigatorKey: _rootNavigatorKey,
       path: '/topic/:id',
       pageBuilder: (context, state) {
         final id = int.parse(state.pathParameters['id']!);
-        return _slidePage(TopicDetailScreen(topicId: id), state);
+        return CupertinoPage(child: TopicDetailScreen(topicId: id), key: state.pageKey);
       },
     ),
     GoRoute(
@@ -88,7 +88,7 @@ final appRouter = GoRouter(
       path: '/member/:username',
       pageBuilder: (context, state) {
         final username = state.pathParameters['username']!;
-        return _slidePage(MemberDetailScreen(username: username), state);
+        return CupertinoPage(child: MemberDetailScreen(username: username), key: state.pageKey);
       },
     ),
     GoRoute(
@@ -96,44 +96,26 @@ final appRouter = GoRouter(
       path: '/node/:name',
       pageBuilder: (context, state) {
         final name = state.pathParameters['name']!;
-        return _slidePage(NodeDetailScreen(nodeName: name), state);
+        return CupertinoPage(child: NodeDetailScreen(nodeName: name), key: state.pageKey);
       },
     ),
     GoRoute(
       parentNavigatorKey: _rootNavigatorKey,
       path: '/create-topic',
-      pageBuilder: (context, state) => _slidePage(const CreateTopicScreen(), state),
+      pageBuilder: (context, state) => CupertinoPage(child: const CreateTopicScreen(), key: state.pageKey),
     ),
     GoRoute(
       parentNavigatorKey: _rootNavigatorKey,
       path: '/followed-nodes',
-      pageBuilder: (context, state) => _slidePage(const FollowedNodesScreen(), state),
+      pageBuilder: (context, state) => CupertinoPage(child: const FollowedNodesScreen(), key: state.pageKey),
     ),
     GoRoute(
       parentNavigatorKey: _rootNavigatorKey,
       path: '/settings',
-      pageBuilder: (context, state) => _slidePage(const SettingsScreen(), state),
+      pageBuilder: (context, state) => CupertinoPage(child: const SettingsScreen(), key: state.pageKey),
     ),
   ],
 );
-
-CustomTransitionPage _slidePage(Widget child, GoRouterState state) {
-  return CustomTransitionPage(
-    key: state.pageKey,
-    child: child,
-    transitionsBuilder: (context, animation, secondaryAnimation, child) {
-      const begin = Offset(1.0, 0.0);
-      const end = Offset.zero;
-      const curve = Curves.easeInOutCubic;
-      final tween = Tween(begin: begin, end: end).chain(CurveTween(curve: curve));
-      final offsetAnimation = animation.drive(tween);
-      return SlideTransition(
-        position: offsetAnimation,
-        child: child,
-      );
-    },
-  );
-}
 
 class V2exApp extends ConsumerStatefulWidget {
   const V2exApp({super.key});
@@ -244,7 +226,6 @@ class ScaffoldWithNavBar extends ConsumerWidget {
   @override
   Widget build(BuildContext context, WidgetRef ref) {
     final location = GoRouterState.of(context).uri.path;
-    final unreadCount = ref.watch(unreadCountProvider);
     int currentIndex = 0;
     if (location.startsWith('/nodes')) currentIndex = 1;
     if (location.startsWith('/search')) currentIndex = 2;
@@ -262,6 +243,41 @@ class ScaffoldWithNavBar extends ConsumerWidget {
             case 3: context.go('/profile');
           }
         },
+        tabWidth: 72,
+        barHeight: 68,
+        barBorderRadius: 34,
+        horizontalPadding: 16,
+        verticalPadding: 12,
+        enableBlend: true,
+        blendAmount: 12,
+        showIndicator: true,
+        indicatorExpansion: 16,
+        magnification: 1.08,
+        innerBlur: 0.5,
+        maskingQuality: MaskingQuality.high,
+        interactionBehavior: GlassInteractionBehavior.full,
+        pressScale: 1.05,
+        settings: const LiquidGlassSettings(
+          thickness: 36,
+          blur: 4,
+          refractiveIndex: 1.65,
+          chromaticAberration: 0.35,
+          lightIntensity: 0.75,
+          saturation: 0.8,
+          ambientStrength: 1.1,
+          lightAngle: 2.356,
+          glassColor: Color.from(alpha: 0.15, red: 1, green: 1, blue: 1),
+        ),
+        indicatorSettings: const LiquidGlassSettings(
+          glassColor: Color.from(alpha: 0.18, red: 1, green: 1, blue: 1),
+          saturation: 1.6,
+          refractiveIndex: 1.18,
+          thickness: 22,
+          lightIntensity: 2.3,
+          chromaticAberration: 0.55,
+          blur: 0,
+          lightAngle: 2.356,
+        ),
         tabs: [
           GlassBottomBarTab(
             label: '首页',

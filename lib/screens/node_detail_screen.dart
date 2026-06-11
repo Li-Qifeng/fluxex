@@ -61,7 +61,13 @@ class _NodeDetailScreenState extends ConsumerState<NodeDetailScreen> {
     return Scaffold(
       body: nodeAsync.when(
         data: (node) {
-          return NotificationListener<ScrollNotification>(
+          return RefreshIndicator(
+            onRefresh: () async {
+              ref.invalidate(nodeDetailProvider(widget.nodeName));
+              ref.invalidate(paginatedNodeTopicsProvider(widget.nodeName));
+              await ref.read(nodeDetailProvider(widget.nodeName).future);
+            },
+            child: NotificationListener<ScrollNotification>(
             onNotification: (scroll) {
               if (scroll.metrics.pixels >= scroll.metrics.maxScrollExtent - 200) {
                 if (notifier.hasMore && !notifier.isLoadingMore) {
@@ -221,7 +227,8 @@ class _NodeDetailScreenState extends ConsumerState<NodeDetailScreen> {
                 ),
               ],
             ),
-          );
+          ),
+        );
         },
         loading: () => const NodeDetailSkeleton(),
         error: (err, _) => Scaffold(
