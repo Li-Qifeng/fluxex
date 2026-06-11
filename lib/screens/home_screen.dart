@@ -201,6 +201,7 @@ class _HomeScreenState extends ConsumerState<HomeScreen>
                   if (result == true) {
                     ref.invalidate(hotTopicsProvider);
                     ref.invalidate(latestTopicsProvider);
+                    ref.invalidate(followedTopicsProvider);
                   }
                 },
               ),
@@ -214,12 +215,17 @@ class _HomeScreenState extends ConsumerState<HomeScreen>
                   ButtonSegment(
                     value: TopicTab.hot,
                     label: Text('最热'),
-                    icon: Icon(Icons.local_fire_department),
+                    icon: Icon(Icons.local_fire_department, size: 16),
                   ),
                   ButtonSegment(
                     value: TopicTab.latest,
                     label: Text('最新'),
-                    icon: Icon(Icons.access_time),
+                    icon: Icon(Icons.access_time, size: 16),
+                  ),
+                  ButtonSegment(
+                    value: TopicTab.followed,
+                    label: Text('关注'),
+                    icon: Icon(Icons.star, size: 16),
                   ),
                 ],
                 selected: {tab},
@@ -237,18 +243,26 @@ class _HomeScreenState extends ConsumerState<HomeScreen>
           onRefresh: () async {
             ref.invalidate(hotTopicsProvider);
             ref.invalidate(latestTopicsProvider);
+            ref.invalidate(followedTopicsProvider);
             await ref.read(
-              tab == TopicTab.hot ? hotTopicsProvider.future : latestTopicsProvider.future,
+              tab == TopicTab.hot
+                  ? hotTopicsProvider.future
+                  : tab == TopicTab.latest
+                      ? latestTopicsProvider.future
+                      : followedTopicsProvider.future,
             );
           },
           child: ScrollBottomDetector(
             onBottomReached: () {
               ref.invalidate(hotTopicsProvider);
               ref.invalidate(latestTopicsProvider);
+              ref.invalidate(followedTopicsProvider);
             },
             child: tab == TopicTab.hot
                 ? buildList(hotAsync, () => ref.invalidate(hotTopicsProvider))
-                : buildList(latestAsync, () => ref.invalidate(latestTopicsProvider)),
+                : tab == TopicTab.latest
+                    ? buildList(latestAsync, () => ref.invalidate(latestTopicsProvider))
+                    : buildList(ref.watch(followedTopicsProvider), () => ref.invalidate(followedTopicsProvider)),
           ),
         ),
       ),

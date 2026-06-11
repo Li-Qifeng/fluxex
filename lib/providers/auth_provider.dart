@@ -5,6 +5,7 @@ import 'package:dio_cookie_manager/dio_cookie_manager.dart';
 import 'api_client.dart';
 
 const _a2Key = 'v2ex_a2_cookie';
+const _usernameKey = 'v2ex_username';
 
 class AuthState {
   final String? username;
@@ -29,9 +30,10 @@ class AuthNotifier extends StateNotifier<AuthState> {
 
   Future<void> _loadPersistedCookie() async {
     final a2 = await _secure.read(key: _a2Key);
+    final username = await _secure.read(key: _usernameKey);
     if (a2 != null && a2.isNotEmpty) {
       await _injectA2(a2);
-      state = state.copyWith(isLoggedIn: true);
+      state = state.copyWith(isLoggedIn: true, username: username);
     }
   }
 
@@ -47,14 +49,18 @@ class AuthNotifier extends StateNotifier<AuthState> {
         .saveFromResponse(Uri.parse('https://www.v2ex.com'), [cookie]);
   }
 
-  Future<void> setA2Cookie(String a2Value) async {
+  Future<void> setA2Cookie(String a2Value, {String? username}) async {
     await _secure.write(key: _a2Key, value: a2Value);
+    if (username != null && username.isNotEmpty) {
+      await _secure.write(key: _usernameKey, value: username);
+    }
     await _injectA2(a2Value);
-    state = state.copyWith(isLoggedIn: true);
+    state = state.copyWith(isLoggedIn: true, username: username);
   }
 
   Future<void> clearA2Cookie() async {
     await _secure.delete(key: _a2Key);
+    await _secure.delete(key: _usernameKey);
   }
 
   Future<void> logout() async {
@@ -65,6 +71,7 @@ class AuthNotifier extends StateNotifier<AuthState> {
         .cookieJar
         .delete(Uri.parse('https://www.v2ex.com'));
     await _secure.delete(key: _a2Key);
+    await _secure.delete(key: _usernameKey);
     state = AuthState(isLoggedIn: false);
   }
 }

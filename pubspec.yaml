@@ -1,6 +1,6 @@
 name: fluxex
 description: "A modern, cross-platform V2EX client inspired by FluxDO."
-version: 0.1.20+20
+version: 0.2.0+20
 # pub.dev using `flutter pub publish`. This is preferred for private packages.
 publish_to: 'none' # Remove this line if you wish to publish to pub.dev
 

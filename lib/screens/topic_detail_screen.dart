@@ -819,7 +819,6 @@ class _TopicDetailScreenState extends ConsumerState<TopicDetailScreen> {
                     for (final r in replies) {
                       _participantNames.add(r.member.username);
                     }
-                    _replyKeys.clear();
                     for (final f in filtered) {
                       _replyKeys.putIfAbsent(f.floor, () => GlobalKey());
                     }
@@ -885,16 +884,15 @@ class _TopicDetailScreenState extends ConsumerState<TopicDetailScreen> {
                 mainAxisSize: MainAxisSize.min,
                 crossAxisAlignment: CrossAxisAlignment.end,
                 children: [
-                  // 拖拽预览气泡
                   AnimatedOpacity(
                     opacity: _dragTargetFloor != null ? 1.0 : 0.0,
                     duration: const Duration(milliseconds: 120),
                     child: Container(
                       margin: const EdgeInsets.only(bottom: 8, right: 4),
-                      padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
+                      padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 8),
                       decoration: BoxDecoration(
                         color: Theme.of(context).colorScheme.primary,
-                        borderRadius: BorderRadius.circular(12),
+                        borderRadius: BorderRadius.circular(14),
                         boxShadow: [
                           BoxShadow(
                             color: Theme.of(context).colorScheme.primary.withValues(alpha: 0.35),
@@ -904,9 +902,9 @@ class _TopicDetailScreenState extends ConsumerState<TopicDetailScreen> {
                         ],
                       ),
                       child: Text(
-                        '${_dragTargetFloor ?? ''}',
+                        '${_dragTargetFloor ?? ''} 楼',
                         style: TextStyle(
-                          fontSize: 16,
+                          fontSize: 15,
                           fontWeight: FontWeight.w700,
                           color: Theme.of(context).colorScheme.onPrimary,
                         ),
@@ -938,23 +936,51 @@ class _TopicDetailScreenState extends ConsumerState<TopicDetailScreen> {
                     onHorizontalDragEnd: (_) => _commitDragJump(),
                     onHorizontalDragCancel: _commitDragJump,
                     child: AnimatedScale(
-                      scale: _dragTargetFloor != null ? 1.08 : 1.0,
+                      scale: _dragTargetFloor != null ? 1.05 : 1.0,
                       duration: const Duration(milliseconds: 150),
                       curve: Curves.easeOutBack,
                       child: GlassContainer(
-                        shape: LiquidRoundedSuperellipse(borderRadius: 20),
-                        padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 8),
-                        child: Text(
-                          (_dragTargetFloor ?? _currentFloor) > 0
-                              ? '${_dragTargetFloor ?? _currentFloor} / $_totalReplies'
-                              : '0 / $_totalReplies',
-                          style: TextStyle(
-                            fontSize: _dragTargetFloor != null ? 14 : 13,
-                            fontWeight: FontWeight.w600,
-                            color: _dragTargetFloor != null
-                                ? Theme.of(context).colorScheme.primary
-                                : Theme.of(context).colorScheme.onPrimaryContainer,
-                          ),
+                        shape: const LiquidRoundedSuperellipse(borderRadius: 18),
+                        child: Column(
+                          mainAxisSize: MainAxisSize.min,
+                          children: [
+                            Container(
+                              width: 100,
+                              height: 3,
+                              margin: const EdgeInsets.fromLTRB(12, 10, 12, 6),
+                              decoration: BoxDecoration(
+                                color: Theme.of(context).colorScheme.outline.withValues(alpha: 0.15),
+                                borderRadius: BorderRadius.circular(2),
+                              ),
+                              child: FractionallySizedBox(
+                                alignment: Alignment.centerLeft,
+                                widthFactor: _totalReplies > 0
+                                    ? ((_dragTargetFloor ?? _currentFloor) / _totalReplies).clamp(0.0, 1.0)
+                                    : 0.0,
+                                child: Container(
+                                  decoration: BoxDecoration(
+                                    color: _dragTargetFloor != null
+                                        ? Theme.of(context).colorScheme.primary
+                                        : Theme.of(context).colorScheme.onPrimaryContainer.withValues(alpha: 0.6),
+                                    borderRadius: BorderRadius.circular(2),
+                                  ),
+                                ),
+                              ),
+                            ),
+                            Padding(
+                              padding: const EdgeInsets.only(bottom: 10, left: 12, right: 12),
+                              child: Text(
+                                '${_dragTargetFloor ?? _currentFloor} / $_totalReplies 楼',
+                                style: TextStyle(
+                                  fontSize: 12,
+                                  fontWeight: FontWeight.w600,
+                                  color: _dragTargetFloor != null
+                                      ? Theme.of(context).colorScheme.primary
+                                      : Theme.of(context).colorScheme.onPrimaryContainer,
+                                ),
+                              ),
+                            ),
+                          ],
                         ),
                       ),
                     ),

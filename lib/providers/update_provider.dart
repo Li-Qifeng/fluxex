@@ -1,4 +1,6 @@
+import 'dart:io';
 import 'package:dio/dio.dart';
+import 'package:dio/io.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:package_info_plus/package_info_plus.dart';
 
@@ -8,6 +10,7 @@ class UpdateInfo {
   final String releaseUrl;
   final String releaseNotes;
   final bool hasUpdate;
+  final String? error;
 
   const UpdateInfo({
     required this.currentVersion,
@@ -15,6 +18,7 @@ class UpdateInfo {
     required this.releaseUrl,
     required this.releaseNotes,
     required this.hasUpdate,
+    this.error,
   });
 }
 
@@ -24,24 +28,61 @@ final packageInfoProvider = FutureProvider<PackageInfo>((ref) {
 
 final updateInfoProvider = FutureProvider<UpdateInfo>((ref) async {
   final packageInfo = await ref.watch(packageInfoProvider.future);
-  final response = await Dio(BaseOptions(
-    connectTimeout: const Duration(seconds: 10),
-    receiveTimeout: const Duration(seconds: 10),
-    headers: {'Accept': 'application/vnd.github+json'},
-  )).get('https://api.github.com/repos/Li-Qifeng/fluxex/releases/latest');
 
-  final data = response.data as Map<String, dynamic>;
-  final latestTag = (data['tag_name'] as String? ?? '').trim();
-  final latestVersion = latestTag.startsWith('v') ? latestTag.substring(1) : latestTag;
-  final currentVersion = packageInfo.version;
+  Dio createDio() {
+    final proxy = Platform.environment['HTTPS_PROXY'] ?? Platform.environment['https_proxy'];
+    final options = BaseOptions(
+      connectTimeout: const Duration(seconds: 8),
+      receiveTimeout: const Duration(seconds: 8),
+      headers: {
+        'Accept': 'application/vnd.github+json',
+        'X-GitHub-Api-Version': '2022-11-28',
+      },
+    );
+    final dio = Dio(options);
+    if (proxy != null && proxy.isNotEmpty) {
+      try {
+        final uri = Uri.parse(proxy.startsWith('http') ? proxy : 'http://$proxy');
+        dio.httpClientAdapter = IOHttpClientAdapter(
+          createHttpClient: () {
+            final client = HttpClient();
+            client.findProxy = (url) => 'PROXY ${uri.host}:${uri.port}';
+            return client;
+          },
+        );
+      } catch (_) {}
+    }
+    return dio;
+  }
 
-  return UpdateInfo(
-    currentVersion: currentVersion,
-    latestVersion: latestVersion,
-    releaseUrl: data['html_url'] as String? ?? 'https://github.com/Li-Qifeng/fluxex/releases',
-    releaseNotes: data['body'] as String? ?? '',
-    hasUpdate: _compareVersions(latestVersion, currentVersion) > 0,
-  );
+  try {
+    final dio = createDio();
+    final response = await dio.get(
+      'https://api.github.com/repos/Li-Qifeng/fluxex/releases/latest',
+    );
+
+    final data = response.data as Map<String, dynamic>;
+    final latestTag = (data['tag_name'] as String? ?? '').trim();
+    final latestVersion = latestTag.startsWith('v') ? latestTag.substring(1) : latestTag;
+    final currentVersion = packageInfo.version;
+
+    return UpdateInfo(
+      currentVersion: currentVersion,
+      latestVersion: latestVersion,
+      releaseUrl: data['html_url'] as String? ?? 'https://github.com/Li-Qifeng/fluxex/releases',
+      releaseNotes: data['body'] as String? ?? '',
+      hasUpdate: _compareVersions(latestVersion, currentVersion) > 0,
+    );
+  } catch (e) {
+    return UpdateInfo(
+      currentVersion: packageInfo.version,
+      latestVersion: '',
+      releaseUrl: 'https://github.com/Li-Qifeng/fluxex/releases',
+      releaseNotes: '',
+      hasUpdate: false,
+      error: e.toString(),
+    );
+  }
 });
 
 int _compareVersions(String left, String right) {

@@ -4,7 +4,7 @@ import '../models/topic_list_result.dart';
 import '../utils/db_helper.dart';
 import 'api_client.dart';
 
-enum TopicTab { hot, latest }
+enum TopicTab { hot, latest, followed }
 
 final topicTabProvider = StateProvider<TopicTab>((ref) => TopicTab.hot);
 
@@ -39,5 +39,36 @@ final latestTopicsProvider = FutureProvider<TopicListResult>((ref) async {
       return TopicListResult(topics, fromCache: true, error: e, filter: 'latest');
     }
     return TopicListResult([], fromCache: false, error: e, filter: 'latest');
+  }
+});
+
+final followedTopicsProvider = FutureProvider<TopicListResult>((ref) async {
+  try {
+    final followed = await DbHelper.getFollowedNodes();
+    if (followed.isEmpty) {
+      return TopicListResult([], filter: 'followed');
+    }
+    final api = V2exApiClient();
+    final allTopics = <Topic>[];
+    for (final node in followed) {
+      try {
+        final nodeName = node['node_name'] as String;
+        final data = await api.getNodeTopics(nodeName);
+        final topics = data.map((e) => Topic.fromJson(e as Map<String, dynamic>)).toList();
+        allTopics.addAll(topics);
+      } catch (_) {
+        // 单个节点失败不阻塞其他节点
+      }
+    }
+    // 去重（按 topic id）并排序（按 lastTouched 倒序）
+    final unique = <int, Topic>{};
+    for (final t in allTopics) {
+      unique[t.id] = t;
+    }
+    final sorted = unique.values.toList()
+      ..sort((a, b) => b.lastTouched.compareTo(a.lastTouched));
+    return TopicListResult(sorted.take(50).toList(), filter: 'followed');
+  } catch (e) {
+    return TopicListResult([], fromCache: false, error: e, filter: 'followed');
   }
 });

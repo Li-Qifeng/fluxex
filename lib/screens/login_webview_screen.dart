@@ -17,10 +17,27 @@ class _LoginWebViewScreenState extends ConsumerState<LoginWebViewScreen> {
     final cookies = await CookieManager.instance().getCookies(url: WebUri('https://www.v2ex.com'));
     final a2Cookie = cookies.where((c) => c.name == 'A2').firstOrNull;
     if (a2Cookie != null && a2Cookie.value.isNotEmpty) {
-      await ref.read(authProvider.notifier).setA2Cookie(a2Cookie.value);
+      // 通过 JS 提取当前登录用户名
+      String? username;
+      try {
+        final result = await controller.evaluateJavascript(source: '''
+          (() => {
+            const a = document.querySelector('a[href^="/member/"]');
+            if (a) {
+              const m = a.getAttribute('href').match(/\/member\/([^/]+)/);
+              return m ? m[1] : null;
+            }
+            return null;
+          })()
+        ''');
+        if (result != null && result.toString().isNotEmpty && result.toString() != 'null') {
+          username = result.toString();
+        }
+      } catch (_) {}
+      await ref.read(authProvider.notifier).setA2Cookie(a2Cookie.value, username: username);
       if (mounted) {
         ScaffoldMessenger.of(context).showSnackBar(
-          const SnackBar(content: Text('登录成功')),
+          SnackBar(content: Text(username != null ? '登录成功: $username' : '登录成功')),
         );
         Navigator.of(context).pop(true);
       }
