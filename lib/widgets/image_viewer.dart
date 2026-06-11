@@ -61,7 +61,7 @@ class _ImageViewerPageState extends State<_ImageViewerPage> {
               width: 36,
               height: 4,
               decoration: BoxDecoration(
-                color: Theme.of(ctx).colorScheme.outline.withOpacity(0.4),
+                color: Theme.of(ctx).colorScheme.outline.withValues(alpha: 0.4),
                 borderRadius: BorderRadius.circular(2),
               ),
             ),
@@ -164,7 +164,7 @@ class _ImageViewerPageState extends State<_ImageViewerPage> {
                   begin: Alignment.topCenter,
                   end: Alignment.bottomCenter,
                   colors: [
-                    Colors.black.withOpacity(0.6),
+                    Colors.black.withValues(alpha: 0.6),
                     Colors.transparent,
                   ],
                 ),
@@ -180,7 +180,7 @@ class _ImageViewerPageState extends State<_ImageViewerPage> {
                     Container(
                       padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
                       decoration: BoxDecoration(
-                        color: Colors.black.withOpacity(0.5),
+                        color: Colors.black.withValues(alpha: 0.5),
                         borderRadius: BorderRadius.circular(16),
                       ),
                       child: Text(

@@ -133,7 +133,7 @@ class _HomeScreenState extends ConsumerState<HomeScreen>
                   margin: const EdgeInsets.all(12),
                   padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 10),
                   decoration: BoxDecoration(
-                    color: Theme.of(context).colorScheme.secondaryContainer.withOpacity(0.6),
+                    color: Theme.of(context).colorScheme.secondaryContainer.withValues(alpha: 0.6),
                     borderRadius: BorderRadius.circular(12),
                   ),
                   child: Row(

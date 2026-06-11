@@ -102,7 +102,7 @@ class _NodeDetailScreenState extends ConsumerState<NodeDetailScreen> {
                               node.titleAlternative,
                               style: TextStyle(
                                 fontSize: 13,
-                                color: Theme.of(context).colorScheme.onPrimaryContainer.withOpacity(0.7),
+                                color: Theme.of(context).colorScheme.onPrimaryContainer.withValues(alpha: 0.7),
                               ),
                             ),
                           ],

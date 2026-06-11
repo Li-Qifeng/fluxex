@@ -68,7 +68,7 @@ class _SearchScreenState extends ConsumerState<SearchScreen> {
                     return Card(
                       margin: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
                       elevation: 0,
-                      color: cs.surfaceContainerHighest.withOpacity(0.4),
+                      color: cs.surfaceContainerHighest.withValues(alpha: 0.4),
                       child: InkWell(
                         borderRadius: BorderRadius.circular(12),
                         onTap: () => context.push('/topic/${r.id}'),

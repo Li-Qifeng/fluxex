@@ -199,7 +199,7 @@ class _ReplyBottomSheetState extends ConsumerState<ReplyBottomSheet> {
               width: 36,
               height: 4,
               decoration: BoxDecoration(
-                color: cs.outline.withOpacity(0.4),
+                color: cs.outline.withValues(alpha: 0.4),
                 borderRadius: BorderRadius.circular(2),
               ),
             ),

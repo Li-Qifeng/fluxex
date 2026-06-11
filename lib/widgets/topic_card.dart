@@ -33,13 +33,13 @@ class TopicCard extends StatelessWidget {
       builder: (context, snapshot) {
         final isRead = snapshot.data ?? false;
         final titleColor = isRead ? colorScheme.outline : colorScheme.onSurface;
-        final metaColor = isRead ? colorScheme.outline.withOpacity(0.7) : colorScheme.onSurfaceVariant;
+        final metaColor = isRead ? colorScheme.outline.withValues(alpha: 0.7) : colorScheme.onSurfaceVariant;
 
         return Card(
           margin: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
           elevation: 0,
           shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
-          color: colorScheme.surfaceContainerHighest.withOpacity(0.4),
+          color: colorScheme.surfaceContainerHighest.withValues(alpha: 0.4),
           child: InkWell(
             borderRadius: BorderRadius.circular(12),
             onTap: () => context.push('/topic/${topic.id}'),
@@ -156,7 +156,7 @@ void _showTopicMenu(BuildContext context, Topic topic) {
                 width: 36,
                 height: 4,
                 decoration: BoxDecoration(
-                  color: Theme.of(context).colorScheme.outline.withOpacity(0.4),
+                  color: Theme.of(context).colorScheme.outline.withValues(alpha: 0.4),
                   borderRadius: BorderRadius.circular(2),
                 ),
               ),

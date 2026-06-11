@@ -40,7 +40,7 @@ class EmojiPickerPanel extends StatelessWidget {
             indicatorColor: cs.primary,
             iconColorSelected: cs.primary,
             iconColor: cs.outline,
-            dividerColor: cs.outlineVariant.withOpacity(0.3),
+            dividerColor: cs.outlineVariant.withValues(alpha: 0.3),
             tabBarHeight: 44,
           ),
           bottomActionBarConfig: BottomActionBarConfig(
@@ -52,7 +52,7 @@ class EmojiPickerPanel extends StatelessWidget {
           ),
           searchViewConfig: SearchViewConfig(
             buttonIconColor: cs.onSurfaceVariant,
-            backgroundColor: cs.surfaceContainerHighest.withOpacity(0.4),
+            backgroundColor: cs.surfaceContainerHighest.withValues(alpha: 0.4),
             hintText: '搜索表情...',
             inputTextStyle: TextStyle(color: cs.onSurface),
             hintTextStyle: TextStyle(color: cs.onSurfaceVariant),
@@ -87,10 +87,10 @@ class _InlineEmojiPickerState extends State<InlineEmojiPicker> {
         Container(
           height: 44,
           decoration: BoxDecoration(
-            color: Theme.of(context).colorScheme.surfaceContainerHighest.withOpacity(0.4),
+            color: Theme.of(context).colorScheme.surfaceContainerHighest.withValues(alpha: 0.4),
             border: Border(
               bottom: BorderSide(
-                color: Theme.of(context).colorScheme.outlineVariant.withOpacity(0.3),
+                color: Theme.of(context).colorScheme.outlineVariant.withValues(alpha: 0.3),
               ),
             ),
           ),

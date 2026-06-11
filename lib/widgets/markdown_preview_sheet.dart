@@ -24,7 +24,7 @@ class MarkdownPreviewSheet extends StatelessWidget {
               width: 36,
               height: 4,
               decoration: BoxDecoration(
-                color: cs.outline.withOpacity(0.4),
+                color: cs.outline.withValues(alpha: 0.4),
                 borderRadius: BorderRadius.circular(2),
               ),
             ),
@@ -84,7 +84,7 @@ class MarkdownPreviewSheet extends StatelessWidget {
                           fontSize: 13,
                         ),
                         codeblockDecoration: BoxDecoration(
-                          color: cs.surfaceContainerHighest.withOpacity(0.5),
+                          color: cs.surfaceContainerHighest.withValues(alpha: 0.5),
                           borderRadius: BorderRadius.circular(8),
                         ),
                         blockquote: TextStyle(
@@ -94,7 +94,7 @@ class MarkdownPreviewSheet extends StatelessWidget {
                         ),
                         blockquoteDecoration: BoxDecoration(
                           border: Border(left: BorderSide(color: cs.primary, width: 4)),
-                          color: cs.primaryContainer.withOpacity(0.2),
+                          color: cs.primaryContainer.withValues(alpha: 0.2),
                         ),
                         blockquotePadding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
                         a: TextStyle(color: cs.primary, decoration: TextDecoration.underline),

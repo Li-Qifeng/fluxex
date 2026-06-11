@@ -39,7 +39,7 @@ class _SettingsScreenState extends ConsumerState<SettingsScreen> {
           Card(
             margin: const EdgeInsets.symmetric(horizontal: 16, vertical: 4),
             elevation: 0,
-            color: cs.surfaceContainerHighest.withOpacity(0.4),
+            color: cs.surfaceContainerHighest.withValues(alpha: 0.4),
             child: Column(
               children: [
                 _ThemeOptionTile(
@@ -71,7 +71,7 @@ class _SettingsScreenState extends ConsumerState<SettingsScreen> {
           Card(
             margin: const EdgeInsets.symmetric(horizontal: 16, vertical: 4),
             elevation: 0,
-            color: cs.surfaceContainerHighest.withOpacity(0.4),
+            color: cs.surfaceContainerHighest.withValues(alpha: 0.4),
             child: Column(
               children: [
                 _ScaleOptionTile(
@@ -103,7 +103,7 @@ class _SettingsScreenState extends ConsumerState<SettingsScreen> {
           Card(
             margin: const EdgeInsets.symmetric(horizontal: 16, vertical: 4),
             elevation: 0,
-            color: cs.surfaceContainerHighest.withOpacity(0.4),
+            color: cs.surfaceContainerHighest.withValues(alpha: 0.4),
             child: ListTile(
               leading: Icon(Icons.cleaning_services, color: cs.primary),
               title: const Text('清除缓存'),
@@ -144,7 +144,7 @@ class _SettingsScreenState extends ConsumerState<SettingsScreen> {
           Card(
             margin: const EdgeInsets.symmetric(horizontal: 16, vertical: 4),
             elevation: 0,
-            color: cs.surfaceContainerHighest.withOpacity(0.4),
+            color: cs.surfaceContainerHighest.withValues(alpha: 0.4),
             child: Padding(
               padding: const EdgeInsets.all(16),
               child: Column(

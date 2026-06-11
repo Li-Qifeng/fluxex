@@ -27,7 +27,7 @@ class TopicHeader extends StatelessWidget {
         color: cs.surface,
         border: Border(
           bottom: BorderSide(
-            color: cs.outlineVariant.withOpacity(0.3),
+            color: cs.outlineVariant.withValues(alpha: 0.3),
             width: 0.5,
           ),
         ),
@@ -150,13 +150,13 @@ class TopicHeader extends StatelessWidget {
     return Row(
       mainAxisSize: MainAxisSize.min,
       children: [
-        Icon(icon, size: 14, color: cs.onSurfaceVariant.withOpacity(0.7)),
+        Icon(icon, size: 14, color: cs.onSurfaceVariant.withValues(alpha: 0.7)),
         const SizedBox(width: 4),
         Text(
           text,
           style: TextStyle(
             fontSize: 13,
-            color: cs.onSurfaceVariant.withOpacity(0.8),
+            color: cs.onSurfaceVariant.withValues(alpha: 0.8),
             fontWeight: FontWeight.w500,
           ),
         ),
@@ -166,7 +166,7 @@ class TopicHeader extends StatelessWidget {
             label,
             style: TextStyle(
               fontSize: 13,
-              color: cs.onSurfaceVariant.withOpacity(0.5),
+              color: cs.onSurfaceVariant.withValues(alpha: 0.5),
             ),
           ),
         ],

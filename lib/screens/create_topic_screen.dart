@@ -216,7 +216,7 @@ class _CreateTopicScreenState extends ConsumerState<CreateTopicScreen> {
                 leadingIcon: const Icon(Icons.account_tree_outlined),
                 inputDecorationTheme: InputDecorationTheme(
                   filled: true,
-                  fillColor: cs.surfaceContainerHighest.withOpacity(0.4),
+                  fillColor: cs.surfaceContainerHighest.withValues(alpha: 0.4),
                   border: OutlineInputBorder(
                     borderRadius: BorderRadius.circular(12),
                     borderSide: BorderSide.none,
@@ -275,7 +275,7 @@ class _CreateTopicScreenState extends ConsumerState<CreateTopicScreen> {
                   labelText: '标题',
                   hintText: '请输入话题标题...',
                   filled: true,
-                  fillColor: cs.surfaceContainerHighest.withOpacity(0.4),
+                  fillColor: cs.surfaceContainerHighest.withValues(alpha: 0.4),
                   border: OutlineInputBorder(
                     borderRadius: BorderRadius.circular(12),
                     borderSide: BorderSide.none,
@@ -296,7 +296,7 @@ class _CreateTopicScreenState extends ConsumerState<CreateTopicScreen> {
                   labelText: '正文内容',
                   hintText: '支持 Markdown 语法，可添加图片...',
                   filled: true,
-                  fillColor: cs.surfaceContainerHighest.withOpacity(0.4),
+                  fillColor: cs.surfaceContainerHighest.withValues(alpha: 0.4),
                   border: OutlineInputBorder(
                     borderRadius: BorderRadius.circular(12),
                     borderSide: BorderSide.none,

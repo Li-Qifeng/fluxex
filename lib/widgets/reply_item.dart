@@ -63,7 +63,7 @@ class ReplyItem extends StatelessWidget {
         color: cs.surface,
         border: Border(
           bottom: BorderSide(
-            color: cs.outlineVariant.withOpacity(0.3),
+            color: cs.outlineVariant.withValues(alpha: 0.3),
             width: 0.5,
           ),
         ),
@@ -102,7 +102,7 @@ class ReplyItem extends StatelessWidget {
                       formatRelativeTime(reply.created),
                       style: TextStyle(
                         fontSize: 12,
-                        color: cs.onSurfaceVariant.withOpacity(0.6),
+                        color: cs.onSurfaceVariant.withValues(alpha: 0.6),
                         fontWeight: FontWeight.w400,
                       ),
                     ),
@@ -113,7 +113,7 @@ class ReplyItem extends StatelessWidget {
                 '#$floor',
                 style: TextStyle(
                   fontSize: 12,
-                  color: cs.onSurfaceVariant.withOpacity(0.5),
+                  color: cs.onSurfaceVariant.withValues(alpha: 0.5),
                   fontWeight: FontWeight.w500,
                 ),
               ),
@@ -126,7 +126,7 @@ class ReplyItem extends StatelessWidget {
               child: Container(
                 padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 6),
                 decoration: BoxDecoration(
-                  color: cs.primaryContainer.withOpacity(0.3),
+                  color: cs.primaryContainer.withValues(alpha: 0.3),
                   borderRadius: BorderRadius.circular(6),
                 ),
                 child: Text(
@@ -177,7 +177,7 @@ class ReplyItem extends StatelessWidget {
             children: [
               if (onQuote != null)
                 IconButton(
-                  icon: Icon(Icons.format_quote_outlined, size: 18, color: cs.onSurfaceVariant.withOpacity(0.6)),
+                  icon: Icon(Icons.format_quote_outlined, size: 18, color: cs.onSurfaceVariant.withValues(alpha: 0.6)),
                   tooltip: '引用',
                   visualDensity: VisualDensity.compact,
                   constraints: const BoxConstraints(minWidth: 32, minHeight: 32),
@@ -185,7 +185,7 @@ class ReplyItem extends StatelessWidget {
                   onPressed: onQuote,
                 ),
               IconButton(
-                icon: Icon(Icons.share_outlined, size: 18, color: cs.onSurfaceVariant.withOpacity(0.6)),
+                icon: Icon(Icons.share_outlined, size: 18, color: cs.onSurfaceVariant.withValues(alpha: 0.6)),
                 tooltip: '分享回复',
                 visualDensity: VisualDensity.compact,
                 constraints: const BoxConstraints(minWidth: 32, minHeight: 32),

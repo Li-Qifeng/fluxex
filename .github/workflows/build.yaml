@@ -52,7 +52,7 @@ jobs:
       - name: Setup Flutter
         uses: subosito/flutter-action@v2
         with:
-          flutter-version: '3.24.5'
+          channel: stable
           cache: true
 
       - name: Setup Java
@@ -84,6 +84,23 @@ jobs:
 
       - name: Get dependencies
         run: flutter pub get
+
+      - name: Patch google_fonts for Dart 3.12+
+        run: |
+          PUB_CACHE_DIR="$PUB_CACHE"
+          if [ -z "$PUB_CACHE_DIR" ]; then
+            PUB_CACHE_DIR=$(flutter pub config cache-dir 2>/dev/null || echo "$HOME/.pub-cache")
+          fi
+          TARGET="$PUB_CACHE_DIR/hosted/pub.dev/google_fonts-6.1.0/lib/src/google_fonts_variant.dart"
+          if [ -f "$TARGET" ]; then
+            sed -i.bak 's/^const _fontWeightToFilenameWeightParts = {/final _fontWeightToFilenameWeightParts = {/' "$TARGET"
+            echo "Patched google_fonts at $TARGET"
+            grep "_fontWeightToFilenameWeightParts" "$TARGET" | head -1
+          else
+            echo "File not found: $TARGET"
+            exit 1
+          fi
+        shell: bash
 
       - name: Build Android
         if: startsWith(matrix.platform, 'android')

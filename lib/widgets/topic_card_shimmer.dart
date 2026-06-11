@@ -7,7 +7,7 @@ class TopicCardShimmer extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final baseColor = Theme.of(context).colorScheme.surfaceContainerHighest;
-    final highlightColor = baseColor.withOpacity(0.6);
+    final highlightColor = baseColor.withValues(alpha: 0.6);
 
     return Shimmer.fromColors(
       baseColor: baseColor,

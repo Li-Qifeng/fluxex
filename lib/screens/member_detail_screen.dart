@@ -72,7 +72,7 @@ class MemberDetailScreen extends ConsumerWidget {
                                 member.tagline!,
                                 style: TextStyle(
                                   fontSize: 13,
-                                  color: Theme.of(context).colorScheme.onSecondaryContainer.withOpacity(0.7),
+                                  color: Theme.of(context).colorScheme.onSecondaryContainer.withValues(alpha: 0.7),
                                 ),
                                 maxLines: 1,
                                 overflow: TextOverflow.ellipsis,
@@ -175,7 +175,7 @@ class MemberDetailScreen extends ConsumerWidget {
     final cs = Theme.of(context).colorScheme;
     return Card(
       elevation: 0,
-      color: cs.surfaceContainerHighest.withOpacity(0.4),
+      color: cs.surfaceContainerHighest.withValues(alpha: 0.4),
       shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
       child: Padding(
         padding: const EdgeInsets.all(16),
@@ -184,12 +184,12 @@ class MemberDetailScreen extends ConsumerWidget {
             Expanded(
               child: _statItem(context, '$topicCount', '话题'),
             ),
-            Container(width: 1, height: 30, color: cs.outlineVariant.withOpacity(0.3)),
+            Container(width: 1, height: 30, color: cs.outlineVariant.withValues(alpha: 0.3)),
             Expanded(
               child: _statItem(context, _formatTime(member.created), '加入于'),
             ),
             if (member.location != null && member.location!.isNotEmpty) ...[
-              Container(width: 1, height: 30, color: cs.outlineVariant.withOpacity(0.3)),
+              Container(width: 1, height: 30, color: cs.outlineVariant.withValues(alpha: 0.3)),
               Expanded(
                 child: _statItem(context, member.location!, '位置'),
               ),
@@ -270,7 +270,7 @@ class MemberDetailScreen extends ConsumerWidget {
       avatar: Icon(icon, size: 16, color: cs.primary),
       label: Text(label),
       onPressed: onTap,
-      backgroundColor: cs.primaryContainer.withOpacity(0.3),
+      backgroundColor: cs.primaryContainer.withValues(alpha: 0.3),
       side: BorderSide.none,
     );
   }

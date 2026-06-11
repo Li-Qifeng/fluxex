@@ -7,7 +7,7 @@ class NodeDetailSkeleton extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final baseColor = Theme.of(context).colorScheme.surfaceContainerHighest;
-    final highlightColor = baseColor.withOpacity(0.6);
+    final highlightColor = baseColor.withValues(alpha: 0.6);
     final cs = Theme.of(context).colorScheme;
 
     return Shimmer.fromColors(

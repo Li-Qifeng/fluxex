@@ -130,7 +130,7 @@ class ShareImageWidget extends StatelessWidget {
                     padding:
                         const EdgeInsets.symmetric(horizontal: 10, vertical: 3),
                     decoration: BoxDecoration(
-                      color: _accentColor.withOpacity(0.12),
+                      color: _accentColor.withValues(alpha: 0.12),
                       borderRadius: BorderRadius.circular(10),
                     ),
                     child: Text(
@@ -161,7 +161,7 @@ class ShareImageWidget extends StatelessWidget {
                 style: TextStyle(
                   fontSize: 14,
                   height: 1.7,
-                  color: _textPrimary.withOpacity(0.88),
+                  color: _textPrimary.withValues(alpha: 0.88),
                 ),
                 maxLines: 6,
                 overflow: TextOverflow.ellipsis,

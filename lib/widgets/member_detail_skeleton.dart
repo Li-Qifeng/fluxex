@@ -7,7 +7,7 @@ class MemberDetailSkeleton extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final baseColor = Theme.of(context).colorScheme.surfaceContainerHighest;
-    final highlightColor = baseColor.withOpacity(0.6);
+    final highlightColor = baseColor.withValues(alpha: 0.6);
     final cs = Theme.of(context).colorScheme;
 
     return Shimmer.fromColors(
@@ -67,7 +67,7 @@ class MemberDetailSkeleton extends StatelessWidget {
                   // 统计卡片骨架
                   Card(
                     elevation: 0,
-                    color: cs.surfaceContainerHighest.withOpacity(0.4),
+                    color: cs.surfaceContainerHighest.withValues(alpha: 0.4),
                     child: Padding(
                       padding: const EdgeInsets.all(16),
                       child: Row(

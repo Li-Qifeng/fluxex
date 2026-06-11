@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:flutter/services.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:fluxex/app.dart';
@@ -7,6 +8,19 @@ import 'package:fluxex/providers/notification_provider.dart';
 import 'package:fluxex/providers/topic_list_provider.dart';
 
 void main() {
+  setUpAll(() {
+    TestWidgetsFlutterBinding.ensureInitialized();
+    TestDefaultBinaryMessengerBinding.instance.defaultBinaryMessenger
+        .setMockMessageHandler('flutter/assets', (message) async {
+      final key = String.fromCharCodes(message!.buffer.asUint8List());
+      if (key == 'AssetManifest.json') {
+        return ByteData.sublistView(
+          Uint8List.fromList('{}'.codeUnits),
+        );
+      }
+      return null;
+    });
+  });
   test('FluxEx app can be constructed', () {
     expect(const V2exApp(), isA<V2exApp>());
   });

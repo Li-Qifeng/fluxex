@@ -1,12 +1,10 @@
-import 'dart:ui';
-import 'package:dynamic_color/dynamic_color.dart';
 import 'package:flutter/material.dart';
-import 'package:flutter/services.dart';
 import 'package:flutter_displaymode/flutter_displaymode.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
+import 'package:dynamic_color/dynamic_color.dart';
 import 'package:google_fonts/google_fonts.dart';
-import 'package:phosphor_flutter/phosphor_flutter.dart';
+import 'package:liquid_glass_widgets/liquid_glass_widgets.dart';
 import 'providers/notification_provider.dart';
 import 'providers/settings_provider.dart';
 import 'screens/home_screen.dart';
@@ -154,16 +152,14 @@ class _V2exAppState extends ConsumerState<V2exApp> {
   Future<void> _setHighRefreshRate() async {
     try {
       await FlutterDisplayMode.setHighRefreshRate();
-    } catch (_) {
-      // Ignore on non-Android platforms
-    }
+    } catch (_) {}
   }
 
   ThemeData _buildTheme(ColorScheme colorScheme) {
     final base = ThemeData(
       colorScheme: colorScheme,
       useMaterial3: true,
-      cardTheme: CardTheme(
+      cardTheme: CardThemeData(
         elevation: 0,
         shape: RoundedRectangleBorder(
           borderRadius: BorderRadius.circular(12),
@@ -175,7 +171,6 @@ class _V2exAppState extends ConsumerState<V2exApp> {
         scrolledUnderElevation: 0.5,
       ),
     );
-    // NotoSans 默认 w400 偏细，整体提升一级
     final rawTextTheme = GoogleFonts.notoSansTextTheme(base.textTheme);
     final textTheme = rawTextTheme.copyWith(
       displayLarge: rawTextTheme.displayLarge?.copyWith(fontWeight: FontWeight.w500),
@@ -211,7 +206,7 @@ class _V2exAppState extends ConsumerState<V2exApp> {
     final settings = ref.watch(settingsProvider);
 
     return DynamicColorBuilder(
-      builder: (lightDynamic, darkDynamic) {
+      builder: (dynamic lightDynamic, dynamic darkDynamic) {
         final fallbackLight = ColorScheme.fromSeed(
           seedColor: const Color(0xFF446CB3),
           brightness: Brightness.light,
@@ -223,8 +218,8 @@ class _V2exAppState extends ConsumerState<V2exApp> {
         return MaterialApp.router(
           title: 'FluxEx',
           debugShowCheckedModeBanner: false,
-          theme: _buildTheme(lightDynamic ?? fallbackLight),
-          darkTheme: _buildTheme(darkDynamic ?? fallbackDark),
+          theme: _buildTheme(lightDynamic?.harmonized() ?? fallbackLight),
+          darkTheme: _buildTheme(darkDynamic?.harmonized() ?? fallbackDark),
           themeMode: settings.themeMode,
           builder: (context, child) {
             return MediaQuery(
@@ -255,54 +250,40 @@ class ScaffoldWithNavBar extends ConsumerWidget {
     if (location.startsWith('/search')) currentIndex = 2;
     if (location.startsWith('/profile')) currentIndex = 3;
 
-    Widget notificationIcon(IconData icon) {
-      if (unreadCount <= 0) return Icon(icon);
-      return Badge(
-        label: Text(unreadCount > 99 ? '99+' : '$unreadCount'),
-        child: Icon(icon),
-      );
-    }
-
     return Scaffold(
       body: ConstrainedContent(child: child),
-      bottomNavigationBar: ClipRect(
-        child: BackdropFilter(
-          filter: ImageFilter.blur(sigmaX: 16, sigmaY: 16),
-          child: NavigationBar(
-            selectedIndex: currentIndex,
-            backgroundColor: Theme.of(context).colorScheme.surface.withOpacity(0.72),
-            surfaceTintColor: Colors.transparent,
-            shadowColor: Colors.transparent,
-            onDestinationSelected: (index) {
-              if (index == 0) context.go('/');
-              if (index == 1) context.go('/nodes');
-              if (index == 2) context.go('/search');
-              if (index == 3) context.go('/profile');
-            },
-            destinations: [
-              NavigationDestination(
-                icon: Icon(PhosphorIcons.house()),
-                selectedIcon: Icon(PhosphorIconsFill.house),
-                label: '首页',
-              ),
-              NavigationDestination(
-                icon: Icon(PhosphorIcons.treeStructure()),
-                selectedIcon: Icon(PhosphorIconsFill.treeStructure),
-                label: '节点',
-              ),
-              NavigationDestination(
-                icon: Icon(PhosphorIcons.magnifyingGlass()),
-                selectedIcon: Icon(PhosphorIconsFill.magnifyingGlass),
-                label: '搜索',
-              ),
-              NavigationDestination(
-                icon: notificationIcon(PhosphorIcons.user()),
-                selectedIcon: notificationIcon(PhosphorIconsFill.user),
-                label: '账号',
-              ),
-            ],
+      bottomNavigationBar: GlassBottomBar(
+        selectedIndex: currentIndex,
+        onTabSelected: (index) {
+          switch (index) {
+            case 0: context.go('/');
+            case 1: context.go('/nodes');
+            case 2: context.go('/search');
+            case 3: context.go('/profile');
+          }
+        },
+        tabs: [
+          GlassBottomBarTab(
+            label: '首页',
+            icon: const Icon(Icons.home_outlined),
+            activeIcon: const Icon(Icons.home),
           ),
-        ),
+          GlassBottomBarTab(
+            label: '节点',
+            icon: const Icon(Icons.account_tree_outlined),
+            activeIcon: const Icon(Icons.account_tree),
+          ),
+          GlassBottomBarTab(
+            label: '搜索',
+            icon: const Icon(Icons.search_outlined),
+            activeIcon: const Icon(Icons.search),
+          ),
+          GlassBottomBarTab(
+            label: '账号',
+            icon: const Icon(Icons.person_outline),
+            activeIcon: const Icon(Icons.person),
+          ),
+        ],
       ),
     );
   }

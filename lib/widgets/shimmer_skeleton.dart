@@ -42,7 +42,7 @@ class _ShimmerSkeletonState extends State<ShimmerSkeleton>
   Widget build(BuildContext context) {
     final cs = Theme.of(context).colorScheme;
     final baseColor = cs.surfaceContainerHighest;
-    final highlightColor = baseColor.withOpacity(0.6);
+    final highlightColor = baseColor.withValues(alpha: 0.6);
 
     return AnimatedBuilder(
       animation: _controller,
@@ -86,7 +86,7 @@ class TopicDetailSkeleton extends StatelessWidget {
             margin: const EdgeInsets.symmetric(horizontal: 16),
             padding: const EdgeInsets.all(16),
             decoration: BoxDecoration(
-              color: Theme.of(context).colorScheme.surfaceContainerHighest.withOpacity(0.4),
+              color: Theme.of(context).colorScheme.surfaceContainerHighest.withValues(alpha: 0.4),
               borderRadius: BorderRadius.circular(20),
             ),
             child: Column(
@@ -133,7 +133,7 @@ class TopicDetailSkeleton extends StatelessWidget {
               margin: const EdgeInsets.symmetric(horizontal: 16, vertical: 6),
               padding: const EdgeInsets.all(14),
               decoration: BoxDecoration(
-                color: Theme.of(context).colorScheme.surfaceContainerHighest.withOpacity(0.3),
+                color: Theme.of(context).colorScheme.surfaceContainerHighest.withValues(alpha: 0.3),
                 borderRadius: BorderRadius.circular(16),
               ),
               child: Column(

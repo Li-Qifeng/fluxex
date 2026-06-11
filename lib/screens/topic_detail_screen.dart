@@ -5,7 +5,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:share_plus/share_plus.dart';
 import 'package:url_launcher/url_launcher.dart';
 import 'package:flutter/services.dart';
-import 'package:glassmorphism_widgets/glassmorphism_widgets.dart';
+import 'package:liquid_glass_widgets/liquid_glass_widgets.dart';
 import '../models/topic.dart';
 import '../models/reply.dart';
 import '../providers/topic_detail_provider.dart';
@@ -83,7 +83,7 @@ class _TopicDetailScreenState extends ConsumerState<TopicDetailScreen> {
                       color: Theme.of(sheetCtx)
                           .colorScheme
                           .outline
-                          .withOpacity(0.4),
+                          .withValues(alpha: 0.4),
                       borderRadius: BorderRadius.circular(2),
                     ),
                   ),
@@ -404,7 +404,7 @@ class _TopicDetailScreenState extends ConsumerState<TopicDetailScreen> {
                 width: 36,
                 height: 4,
                 decoration: BoxDecoration(
-                  color: Theme.of(context).colorScheme.outline.withOpacity(0.4),
+                  color: Theme.of(context).colorScheme.outline.withValues(alpha: 0.4),
                   borderRadius: BorderRadius.circular(2),
                 ),
               ),
@@ -673,14 +673,14 @@ class _TopicDetailScreenState extends ConsumerState<TopicDetailScreen> {
                       color: Theme.of(context).colorScheme.surface,
                       border: Border(
                         bottom: BorderSide(
-                          color: Theme.of(context).colorScheme.outlineVariant.withOpacity(0.3),
+                          color: Theme.of(context).colorScheme.outlineVariant.withValues(alpha: 0.3),
                           width: 0.5,
                         ),
                       ),
                     ),
                     child: Row(
                       children: [
-                        Icon(Icons.chat_bubble_outline_rounded, size: 16, color: Theme.of(context).colorScheme.onSurfaceVariant.withOpacity(0.7)),
+                        Icon(Icons.chat_bubble_outline_rounded, size: 16, color: Theme.of(context).colorScheme.onSurfaceVariant.withValues(alpha: 0.7)),
                         const SizedBox(width: 6),
                         Text(
                           '${topic.replies} 回复',
@@ -771,26 +771,16 @@ class _TopicDetailScreenState extends ConsumerState<TopicDetailScreen> {
           Positioned(
             bottom: 16,
             right: 16,
-            child: GlassFloatingActionButton(
-              heroTag: 'reply',
-              onPressed: () => _openReplySheet(),
-              blur: 10,
-              radius: 28,
-              linearGradient: LinearGradient(
-                colors: [
-                  Theme.of(context).colorScheme.primary.withOpacity(0.55),
-                  Theme.of(context).colorScheme.primary.withOpacity(0.22),
-                ],
-                begin: Alignment.topLeft,
-                end: Alignment.bottomRight,
+            child: SizedBox(
+              width: 56,
+              height: 56,
+              child: FloatingActionButton(
+                heroTag: 'reply',
+                onPressed: () => _openReplySheet(),
+                elevation: 0,
+                backgroundColor: Theme.of(context).colorScheme.primary,
+                child: const Icon(Icons.reply),
               ),
-              borderGradient: LinearGradient(
-                colors: [
-                  Colors.white.withOpacity(0.5),
-                  Colors.white.withOpacity(0.1),
-                ],
-              ),
-              child: const Icon(Icons.reply),
             ),
           ),
           if (_totalReplies > 0 && !_isSearching)
@@ -810,22 +800,7 @@ class _TopicDetailScreenState extends ConsumerState<TopicDetailScreen> {
                   }
                 },
                 child: GlassContainer(
-                  radius: 20,
-                  blur: 12,
-                  linearGradient: LinearGradient(
-                    colors: [
-                      Theme.of(context).colorScheme.primaryContainer.withOpacity(0.45),
-                      Theme.of(context).colorScheme.primaryContainer.withOpacity(0.18),
-                    ],
-                    begin: Alignment.topLeft,
-                    end: Alignment.bottomRight,
-                  ),
-                  borderGradient: LinearGradient(
-                    colors: [
-                      Colors.white.withOpacity(0.55),
-                      Colors.white.withOpacity(0.12),
-                    ],
-                  ),
+                  shape: LiquidRoundedSuperellipse(borderRadius: 20),
                   padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 8),
                   child: Text(
                     _currentFloor > 0
