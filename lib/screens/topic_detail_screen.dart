@@ -418,6 +418,55 @@ class _TopicDetailScreenState extends ConsumerState<TopicDetailScreen> {
     });
   }
 
+  void _showFloorInputDialog() {
+    HapticFeedback.mediumImpact();
+    final controller = TextEditingController();
+    showDialog(
+      context: context,
+      builder: (ctx) => AlertDialog(
+        title: const Text('跳转到楼层'),
+        content: TextField(
+          controller: controller,
+          autofocus: true,
+          keyboardType: TextInputType.number,
+          decoration: InputDecoration(
+            hintText: '1 - $_totalReplies',
+            filled: true,
+            fillColor: Theme.of(context).colorScheme.surfaceContainerHighest,
+            border: OutlineInputBorder(
+              borderRadius: BorderRadius.circular(12),
+              borderSide: BorderSide.none,
+            ),
+            contentPadding: const EdgeInsets.symmetric(horizontal: 16, vertical: 14),
+          ),
+          onSubmitted: (value) {
+            final floor = int.tryParse(value.trim());
+            Navigator.pop(ctx);
+            if (floor != null && floor >= 1 && floor <= _totalReplies) {
+              _jumpToFloor(floor);
+            }
+          },
+        ),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.pop(ctx),
+            child: const Text('取消'),
+          ),
+          FilledButton(
+            onPressed: () {
+              final floor = int.tryParse(controller.text.trim());
+              Navigator.pop(ctx);
+              if (floor != null && floor >= 1 && floor <= _totalReplies) {
+                _jumpToFloor(floor);
+              }
+            },
+            child: const Text('跳转'),
+          ),
+        ],
+      ),
+    );
+  }
+
   void _showFloorPicker() {
     showModalBottomSheet(
       context: context,
@@ -832,6 +881,7 @@ class _TopicDetailScreenState extends ConsumerState<TopicDetailScreen> {
                   setState(() => _dragTargetFloor = null);
                   _showFloorPicker();
                 },
+                onLongPress: _showFloorInputDialog,
                 onHorizontalDragStart: (_) {
                   _dragStartFloor = _currentFloor;
                   _dragAccumulatedDx = 0;
