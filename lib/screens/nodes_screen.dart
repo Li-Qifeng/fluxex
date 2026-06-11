@@ -3,6 +3,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 import '../providers/node_provider.dart';
 import '../widgets/cached_avatar.dart';
+import '../widgets/glass_search_bar.dart';
 import '../widgets/state_widgets.dart';
 
 class NodesScreen extends ConsumerStatefulWidget {
@@ -27,10 +28,8 @@ class _NodesScreenState extends ConsumerState<NodesScreen> {
           preferredSize: const Size.fromHeight(56),
           child: Padding(
             padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
-            child: SearchBar(
+            child: GlassSearchBar(
               hintText: '搜索节点...',
-              leading: const Icon(Icons.search),
-              padding: const WidgetStatePropertyAll(EdgeInsets.symmetric(horizontal: 16)),
               onChanged: (value) => setState(() => _searchQuery = value.trim().toLowerCase()),
             ),
           ),

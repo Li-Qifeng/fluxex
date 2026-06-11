@@ -3,10 +3,12 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 import 'package:url_launcher/url_launcher.dart';
 import '../providers/auth_provider.dart';
+import '../providers/current_member_provider.dart';
 import '../providers/notification_provider.dart';
 import '../providers/update_provider.dart';
 import '../utils/app_toast.dart';
 import '../utils/db_helper.dart';
+import '../widgets/cached_avatar.dart';
 
 class ProfileScreen extends ConsumerStatefulWidget {
   const ProfileScreen({super.key});
@@ -62,42 +64,16 @@ class _ProfileScreenState extends ConsumerState<ProfileScreen> {
       body: ListView(
         padding: const EdgeInsets.all(16),
         children: [
-          Card(
-            child: Padding(
-              padding: const EdgeInsets.all(20),
-              child: Column(
-                children: [
-                  Icon(
-                    auth.isLoggedIn ? Icons.check_circle : Icons.account_circle,
-                    size: 64,
-                    color: auth.isLoggedIn
-                        ? Colors.green
-                        : Theme.of(context).colorScheme.primary,
-                  ),
-                  const SizedBox(height: 12),
-                  Text(
-                    auth.isLoggedIn ? '已登录' : '未登录',
-                    style: Theme.of(context).textTheme.titleLarge,
-                  ),
-                  if (auth.username != null) ...[
-                    const SizedBox(height: 4),
-                    Text(
-                      auth.username!,
-                      style: TextStyle(
-                        color: Theme.of(context).colorScheme.onSurfaceVariant,
-                      ),
-                    ),
-                  ],
-                ],
-              ),
-            ),
-          ),
+          _ProfileHeaderCard(auth: auth),
           const SizedBox(height: 16),
           if (!auth.isLoggedIn) ...[
             FilledButton.icon(
               onPressed: () async {
                 final result = await context.push('/login');
-                if (result == true) setState(() {});
+                if (result == true) {
+                  ref.invalidate(currentMemberProvider);
+                  setState(() {});
+                }
               },
               icon: const Icon(Icons.login),
               label: const Text('登录'),
@@ -322,5 +298,152 @@ class _UpdateTile extends ConsumerWidget {
     if (await canLaunchUrl(uri)) {
       await launchUrl(uri, mode: LaunchMode.externalApplication);
     }
+  }
+}
+
+class _ProfileHeaderCard extends ConsumerWidget {
+  final AuthState auth;
+
+  const _ProfileHeaderCard({required this.auth});
+
+  @override
+  Widget build(BuildContext context, WidgetRef ref) {
+    final cs = Theme.of(context).colorScheme;
+    final memberAsync = ref.watch(currentMemberProvider);
+
+    if (!auth.isLoggedIn) {
+      return Card(
+        child: Padding(
+          padding: const EdgeInsets.all(20),
+          child: Column(
+            children: [
+              Icon(
+                Icons.account_circle,
+                size: 64,
+                color: cs.primary,
+              ),
+              const SizedBox(height: 12),
+              Text(
+                '未登录',
+                style: Theme.of(context).textTheme.titleLarge,
+              ),
+            ],
+          ),
+        ),
+      );
+    }
+
+    return Card(
+      child: Padding(
+        padding: const EdgeInsets.all(20),
+        child: memberAsync.when(
+          data: (member) {
+            return Column(
+              children: [
+                CachedAvatar(
+                  imageUrl: member?.avatarLarge,
+                  radius: 40,
+                  fallbackText: auth.username,
+                ),
+                const SizedBox(height: 12),
+                Row(
+                  mainAxisAlignment: MainAxisAlignment.center,
+                  children: [
+                    Flexible(
+                      child: Text(
+                        auth.username ?? '用户',
+                        style: Theme.of(context).textTheme.titleLarge?.copyWith(
+                          fontWeight: FontWeight.w700,
+                        ),
+                        overflow: TextOverflow.ellipsis,
+                      ),
+                    ),
+                    const SizedBox(width: 6),
+                    Container(
+                      padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 2),
+                      decoration: BoxDecoration(
+                        color: cs.primaryContainer,
+                        borderRadius: BorderRadius.circular(10),
+                      ),
+                      child: Text(
+                        'Pro',
+                        style: TextStyle(
+                          fontSize: 11,
+                          fontWeight: FontWeight.w700,
+                          color: cs.onPrimaryContainer,
+                        ),
+                      ),
+                    ),
+                  ],
+                ),
+                if (member?.tagline != null && member!.tagline!.isNotEmpty) ...[
+                  const SizedBox(height: 6),
+                  Text(
+                    member.tagline!,
+                    style: TextStyle(
+                      fontSize: 13,
+                      color: cs.onSurfaceVariant,
+                    ),
+                  ),
+                ],
+                if (member?.bio != null && member!.bio!.isNotEmpty) ...[
+                  const SizedBox(height: 8),
+                  Text(
+                    member.bio!,
+                    style: TextStyle(
+                      fontSize: 12,
+                      color: cs.outline,
+                      height: 1.4,
+                    ),
+                    textAlign: TextAlign.center,
+                    maxLines: 3,
+                    overflow: TextOverflow.ellipsis,
+                  ),
+                ],
+                if (member?.location != null && member!.location!.isNotEmpty) ...[
+                  const SizedBox(height: 8),
+                  Row(
+                    mainAxisAlignment: MainAxisAlignment.center,
+                    children: [
+                      Icon(Icons.location_on_outlined, size: 14, color: cs.outline),
+                      const SizedBox(width: 4),
+                      Text(
+                        member.location!,
+                        style: TextStyle(fontSize: 12, color: cs.outline),
+                      ),
+                    ],
+                  ),
+                ],
+              ],
+            );
+          },
+          loading: () => const SizedBox(
+            height: 120,
+            child: Center(child: CircularProgressIndicator(strokeWidth: 2)),
+          ),
+          error: (_, __) => Column(
+            children: [
+              CachedAvatar(
+                imageUrl: null,
+                radius: 40,
+                fallbackText: auth.username,
+              ),
+              const SizedBox(height: 12),
+              Text(
+                auth.username ?? '用户',
+                style: Theme.of(context).textTheme.titleLarge?.copyWith(
+                  fontWeight: FontWeight.w700,
+                ),
+              ),
+              const SizedBox(height: 6),
+              Text(
+                '已登录',
+                style: TextStyle(fontSize: 13, color: cs.onSurfaceVariant),
+              ),
+            ],
+          ),
+        ),
+      ),
+    );
   }
 }

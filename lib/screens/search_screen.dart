@@ -3,6 +3,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 import '../providers/search_history_provider.dart';
 import '../providers/search_provider.dart';
+import '../widgets/glass_search_bar.dart';
 import '../widgets/state_widgets.dart';
 
 class SearchScreen extends ConsumerStatefulWidget {
@@ -37,20 +38,11 @@ class _SearchScreenState extends ConsumerState<SearchScreen> {
 
     return Scaffold(
       appBar: AppBar(
-        title: SearchBar(
+        title: GlassSearchBar(
           controller: _controller,
           hintText: '搜索话题...',
-          trailing: [
-            if (_controller.text.isNotEmpty)
-              IconButton(
-                icon: const Icon(Icons.clear),
-                onPressed: () {
-                  _controller.clear();
-                  setState(() => _query = '');
-                },
-              ),
-          ],
           onSubmitted: _doSearch,
+          onClear: () => setState(() => _query = ''),
         ),
         centerTitle: true,
       ),

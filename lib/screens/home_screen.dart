@@ -1,4 +1,3 @@
-import 'dart:ui';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter/services.dart';
@@ -8,6 +7,7 @@ import '../models/topic_list_result.dart';
 import '../providers/auth_provider.dart';
 import '../providers/settings_provider.dart';
 import '../providers/topic_list_provider.dart';
+import '../widgets/gradient_app_bar_blur.dart';
 import '../widgets/state_widgets.dart';
 import '../widgets/topic_card.dart';
 import '../widgets/topic_card_shimmer.dart';
@@ -243,22 +243,7 @@ class _HomeScreenState extends ConsumerState<HomeScreen>
               ),
             ),
           ),
-          flexibleSpace: ClipRect(
-            child: BackdropFilter(
-              filter: ImageFilter.blur(sigmaX: 18, sigmaY: 18),
-              child: Container(
-                decoration: BoxDecoration(
-                  color: Theme.of(context).colorScheme.surface.withValues(alpha: 0.55),
-                  border: Border(
-                    bottom: BorderSide(
-                      color: Theme.of(context).colorScheme.outline.withValues(alpha: 0.1),
-                      width: 0.5,
-                    ),
-                  ),
-                ),
-              ),
-            ),
-          ),
+          flexibleSpace: const GradientAppBarBlur(maxBlur: 32, tintAlpha: 0.55),
         ),
         body: RefreshIndicator(
           onRefresh: () async {

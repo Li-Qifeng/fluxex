@@ -1,8 +1,6 @@
 import 'dart:async';
 import 'dart:io' show Directory, File;
-import 'dart:ui';
 import 'package:flutter/material.dart';
-import 'package:flutter/cupertino.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:share_plus/share_plus.dart';
 import 'package:url_launcher/url_launcher.dart';
@@ -21,6 +19,7 @@ import '../widgets/share_image_widget.dart';
 import '../widgets/state_widgets.dart';
 import '../widgets/topic_header.dart';
 import '../widgets/reply_item.dart';
+import '../widgets/gradient_app_bar_blur.dart';
 
 class TopicDetailScreen extends ConsumerStatefulWidget {
   final int topicId;
@@ -480,8 +479,7 @@ class _TopicDetailScreenState extends ConsumerState<TopicDetailScreen> {
 
   void _showFloorPicker() {
     HapticFeedback.mediumImpact();
-    final initialItem = (_currentFloor - 1).clamp(0, _totalReplies - 1);
-    int selectedFloor = _currentFloor;
+    double tempFloor = _currentFloor.toDouble().clamp(1.0, _totalReplies.toDouble());
     showModalBottomSheet(
       context: context,
       isScrollControlled: true,
@@ -489,80 +487,113 @@ class _TopicDetailScreenState extends ConsumerState<TopicDetailScreen> {
       shape: const RoundedRectangleBorder(
         borderRadius: BorderRadius.vertical(top: Radius.circular(24)),
       ),
-      builder: (ctx) => SafeArea(
-        child: SizedBox(
-          height: 320,
-          child: Column(
-            children: [
-              Container(
-                margin: const EdgeInsets.only(top: 8, bottom: 4),
-                width: 36,
-                height: 4,
-                decoration: BoxDecoration(
-                  color: Theme.of(ctx).colorScheme.outline.withValues(alpha: 0.4),
-                  borderRadius: BorderRadius.circular(2),
-                ),
-              ),
-              Padding(
-                padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
-                child: Row(
-                  children: [
-                    TextButton(
-                      onPressed: () => Navigator.pop(ctx),
-                      child: const Text('取消'),
+      builder: (ctx) => StatefulBuilder(
+        builder: (ctx, setSheetState) {
+          return SafeArea(
+            child: SizedBox(
+              height: 340,
+              child: Column(
+                children: [
+                  Container(
+                    margin: const EdgeInsets.only(top: 8, bottom: 4),
+                    width: 36,
+                    height: 4,
+                    decoration: BoxDecoration(
+                      color: Theme.of(ctx).colorScheme.outline.withValues(alpha: 0.4),
+                      borderRadius: BorderRadius.circular(2),
                     ),
-                    const Spacer(),
-                    Text(
-                      '跳转到楼层',
-                      style: Theme.of(ctx).textTheme.titleMedium?.copyWith(
-                        fontWeight: FontWeight.w600,
-                      ),
-                    ),
-                    const Spacer(),
-                    TextButton(
-                      onPressed: () {
-                        Navigator.pop(ctx);
-                        _jumpToFloor(selectedFloor);
-                      },
-                      child: const Text('跳转'),
-                    ),
-                  ],
-                ),
-              ),
-              const Divider(height: 1),
-              Expanded(
-                child: CupertinoPicker(
-                  magnification: 1.2,
-                  useMagnifier: true,
-                  itemExtent: 44,
-                  scrollController: FixedExtentScrollController(initialItem: initialItem),
-                  onSelectedItemChanged: (index) {
-                    selectedFloor = index + 1;
-                  },
-                  children: List.generate(
-                    _totalReplies,
-                    (index) {
-                      final floor = index + 1;
-                      final isCurrent = floor == _currentFloor;
-                      return Center(
-                        child: Text(
-                          '$floor 楼',
-                          style: TextStyle(
-                            fontSize: isCurrent ? 20 : 17,
-                            fontWeight: isCurrent ? FontWeight.w700 : FontWeight.w500,
-                            color: isCurrent
-                                ? Theme.of(ctx).colorScheme.primary
-                                : Theme.of(ctx).colorScheme.onSurface,
+                  ),
+                  Padding(
+                    padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
+                    child: Row(
+                      children: [
+                        TextButton(
+                          onPressed: () => Navigator.pop(ctx),
+                          child: const Text('取消'),
+                        ),
+                        const Spacer(),
+                        Text(
+                          '楼层跳转',
+                          style: Theme.of(ctx).textTheme.titleMedium?.copyWith(
+                            fontWeight: FontWeight.w600,
                           ),
                         ),
-                      );
-                    },
+                        const Spacer(),
+                        TextButton(
+                          onPressed: () {
+                            Navigator.pop(ctx);
+                            _jumpToFloor(tempFloor.round());
+                          },
+                          child: const Text('跳转'),
+                        ),
+                      ],
+                    ),
                   ),
-                ),
+                  const Divider(height: 1),
+                  const Spacer(),
+                  AnimatedSwitcher(
+                    duration: const Duration(milliseconds: 120),
+                    child: Text(
+                      '${tempFloor.round()} 楼',
+                      key: ValueKey<int>(tempFloor.round()),
+                      style: Theme.of(ctx).textTheme.displaySmall?.copyWith(
+                        fontWeight: FontWeight.w800,
+                        color: Theme.of(ctx).colorScheme.primary,
+                      ),
+                    ),
+                  ),
+                  const SizedBox(height: 6),
+                  Text(
+                    '共 $_totalReplies 楼',
+                    style: TextStyle(
+                      fontSize: 14,
+                      color: Theme.of(ctx).colorScheme.outline,
+                    ),
+                  ),
+                  const Spacer(),
+                  Padding(
+                    padding: const EdgeInsets.symmetric(horizontal: 24),
+                    child: Slider(
+                      value: tempFloor,
+                      min: 1,
+                      max: _totalReplies.toDouble(),
+                      divisions: _totalReplies > 1 ? _totalReplies - 1 : null,
+                      label: '${tempFloor.round()}',
+                      onChanged: (value) {
+                        setSheetState(() => tempFloor = value);
+                        HapticFeedback.lightImpact();
+                      },
+                      onChangeEnd: (value) {
+                        Navigator.pop(ctx);
+                        _jumpToFloor(value.round());
+                      },
+                    ),
+                  ),
+                  const SizedBox(height: 16),
+                  Row(
+                    mainAxisAlignment: MainAxisAlignment.center,
+                    children: [
+                      _FloorStepButton(
+                        icon: Icons.remove,
+                        onPressed: tempFloor > 1
+                            ? () => setSheetState(() => tempFloor = (tempFloor - 1).clamp(1.0, _totalReplies.toDouble()))
+                            : null,
+                      ),
+                      const SizedBox(width: 48),
+                      _FloorStepButton(
+                        icon: Icons.add,
+                        onPressed: tempFloor < _totalReplies
+                            ? () => setSheetState(() => tempFloor = (tempFloor + 1).clamp(1.0, _totalReplies.toDouble()))
+                            : null,
+                      ),
+                    ],
+                  ),
+                  const SizedBox(height: 24),
+                ],
               ),
-            ],
-          ),
-        ),
+            ),
+          );
+        },
       ),
     );
   }
@@ -767,22 +798,7 @@ class _TopicDetailScreenState extends ConsumerState<TopicDetailScreen> {
               },
             ),
         ],
-        flexibleSpace: ClipRect(
-          child: BackdropFilter(
-            filter: ImageFilter.blur(sigmaX: 18, sigmaY: 18),
-            child: Container(
-              decoration: BoxDecoration(
-                color: Theme.of(context).colorScheme.surface.withValues(alpha: 0.55),
-                border: Border(
-                  bottom: BorderSide(
-                    color: Theme.of(context).colorScheme.outline.withValues(alpha: 0.1),
-                    width: 0.5,
-                  ),
-                ),
-              ),
-            ),
-          ),
-        ),
+        flexibleSpace: const GradientAppBarBlur(maxBlur: 32, tintAlpha: 0.55),
       ),
       body: topicAsync.when(
         data: (topic) {
@@ -1035,6 +1051,32 @@ class _TopicDetailScreenState extends ConsumerState<TopicDetailScreen> {
               ),
             ),
         ],
+      ),
+    );
+  }
+}
+
+class _FloorStepButton extends StatelessWidget {
+  final IconData icon;
+  final VoidCallback? onPressed;
+
+  const _FloorStepButton({required this.icon, this.onPressed});
+
+  @override
+  Widget build(BuildContext context) {
+    final cs = Theme.of(context).colorScheme;
+    return Material(
+      color: cs.surfaceContainerHighest.withValues(alpha: 0.5),
+      borderRadius: BorderRadius.circular(12),
+      child: InkWell(
+        onTap: onPressed,
+        borderRadius: BorderRadius.circular(12),
+        child: Container(
+          width: 44,
+          height: 44,
+          alignment: Alignment.center,
+          child: Icon(icon, size: 20, color: cs.onSurface),
+        ),
       ),
     );
   }
