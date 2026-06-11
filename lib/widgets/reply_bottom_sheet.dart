@@ -1,6 +1,7 @@
 import 'dart:async';
 import 'dart:math';
 import 'package:flutter/material.dart';
+import 'package:flutter/services.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import '../providers/api_client.dart';
 import '../utils/app_toast.dart';
@@ -30,6 +31,7 @@ class _ReplyBottomSheetState extends ConsumerState<ReplyBottomSheet> {
   bool _showEmojiPicker = false;
   List<String> _mentionSuggestions = [];
   int? _mentionStart;
+  int _selectedMentionIndex = 0;
   Timer? _draftTimer;
 
   String get _draftId => 'reply_${widget.topicId}';
@@ -96,6 +98,7 @@ class _ReplyBottomSheetState extends ConsumerState<ReplyBottomSheet> {
       setState(() {
         _mentionSuggestions = [];
         _mentionStart = null;
+        _selectedMentionIndex = 0;
       });
       return;
     }
@@ -104,6 +107,7 @@ class _ReplyBottomSheetState extends ConsumerState<ReplyBottomSheet> {
       setState(() {
         _mentionSuggestions = [];
         _mentionStart = null;
+        _selectedMentionIndex = 0;
       });
       return;
     }
@@ -130,11 +134,13 @@ class _ReplyBottomSheetState extends ConsumerState<ReplyBottomSheet> {
       setState(() {
         _mentionStart = atIndex;
         _mentionSuggestions = suggestions;
+        _selectedMentionIndex = 0;
       });
     } else {
       setState(() {
         _mentionSuggestions = [];
         _mentionStart = null;
+        _selectedMentionIndex = 0;
       });
     }
   }
@@ -151,6 +157,7 @@ class _ReplyBottomSheetState extends ConsumerState<ReplyBottomSheet> {
     setState(() {
       _mentionSuggestions = [];
       _mentionStart = null;
+      _selectedMentionIndex = 0;
     });
   }
 
@@ -248,47 +255,104 @@ class _ReplyBottomSheetState extends ConsumerState<ReplyBottomSheet> {
             const Divider(height: 1),
             if (_mentionSuggestions.isNotEmpty)
               Container(
-                constraints: const BoxConstraints(maxHeight: 52),
-                padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 4),
-                child: ListView.builder(
-                  scrollDirection: Axis.horizontal,
-                  itemCount: _mentionSuggestions.length,
-                  itemBuilder: (context, index) {
-                    final name = _mentionSuggestions[index];
-                    return Padding(
-                      padding: const EdgeInsets.only(right: 8),
-                      child: ActionChip(
-                        avatar: CircleAvatar(
-                          radius: 10,
-                          backgroundColor: cs.primaryContainer,
-                          child: Text(name[0].toUpperCase(),
-                              style: TextStyle(fontSize: 10, color: cs.onPrimaryContainer)),
-                        ),
-                        label: Text(name),
-                        padding: EdgeInsets.zero,
-                        visualDensity: VisualDensity.compact,
-                        onPressed: () => _insertMention(name),
+                constraints: const BoxConstraints(maxHeight: 180),
+                margin: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
+                decoration: BoxDecoration(
+                  color: cs.surfaceContainerHighest,
+                  borderRadius: BorderRadius.circular(12),
+                  border: Border.all(color: cs.outline.withValues(alpha: 0.2)),
+                ),
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  mainAxisSize: MainAxisSize.min,
+                  children: [
+                    Padding(
+                      padding: const EdgeInsets.fromLTRB(12, 8, 12, 4),
+                      child: Text(
+                        '选择提及用户',
+                        style: TextStyle(fontSize: 12, color: cs.onSurfaceVariant, fontWeight: FontWeight.w500),
                       ),
-                    );
-                  },
+                    ),
+                    Flexible(
+                      child: ListView.builder(
+                        shrinkWrap: true,
+                        itemCount: _mentionSuggestions.length,
+                        itemBuilder: (context, index) {
+                          final name = _mentionSuggestions[index];
+                          final isSelected = index == _selectedMentionIndex;
+                          return ListTile(
+                            dense: true,
+                            visualDensity: VisualDensity.compact,
+                            minTileHeight: 40,
+                            leading: CircleAvatar(
+                              radius: 12,
+                              backgroundColor: isSelected ? cs.primary : cs.primaryContainer,
+                              child: Text(
+                                name[0].toUpperCase(),
+                                style: TextStyle(
+                                  fontSize: 10,
+                                  color: isSelected ? cs.onPrimary : cs.onPrimaryContainer,
+                                ),
+                              ),
+                            ),
+                            title: Text(
+                              name,
+                              style: TextStyle(
+                                fontSize: 14,
+                                color: isSelected ? cs.primary : cs.onSurface,
+                                fontWeight: isSelected ? FontWeight.w600 : FontWeight.normal,
+                              ),
+                            ),
+                            tileColor: isSelected ? cs.primaryContainer.withValues(alpha: 0.3) : null,
+                            shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(8)),
+                            onTap: () => _insertMention(name),
+                          );
+                        },
+                      ),
+                    ),
+                  ],
                 ),
               ),
-            if (_mentionSuggestions.isNotEmpty) const Divider(height: 1),
-            ConstrainedBox(
-              constraints: const BoxConstraints(minHeight: 120, maxHeight: 320),
-              child: TextField(
-                controller: _controller,
-                focusNode: _focusNode,
-                decoration: const InputDecoration(
-                  hintText: '输入回复内容...',
-                  border: InputBorder.none,
-                  contentPadding: EdgeInsets.all(16),
+            Focus(
+              onKeyEvent: (node, event) {
+                if (_mentionSuggestions.isEmpty) return KeyEventResult.ignored;
+                if (event is KeyDownEvent) {
+                  if (event.logicalKey == LogicalKeyboardKey.escape) {
+                    setState(() {
+                      _mentionSuggestions = [];
+                      _mentionStart = null;
+                      _selectedMentionIndex = 0;
+                    });
+                    return KeyEventResult.handled;
+                  } else if (event.logicalKey == LogicalKeyboardKey.arrowDown) {
+                    setState(() => _selectedMentionIndex = (_selectedMentionIndex + 1).clamp(0, _mentionSuggestions.length - 1));
+                    return KeyEventResult.handled;
+                  } else if (event.logicalKey == LogicalKeyboardKey.arrowUp) {
+                    setState(() => _selectedMentionIndex = (_selectedMentionIndex - 1).clamp(0, _mentionSuggestions.length - 1));
+                    return KeyEventResult.handled;
+                  } else if (event.logicalKey == LogicalKeyboardKey.enter || event.logicalKey == LogicalKeyboardKey.tab) {
+                    _insertMention(_mentionSuggestions[_selectedMentionIndex]);
+                    return KeyEventResult.handled;
+                  }
+                }
+                return KeyEventResult.ignored;
+              },
+              child: ConstrainedBox(
+                constraints: const BoxConstraints(minHeight: 120, maxHeight: 320),
+                child: TextField(
+                  controller: _controller,
+                  focusNode: _focusNode,
+                  decoration: const InputDecoration(
+                    hintText: '输入回复内容...',
+                    border: InputBorder.none,
+                    contentPadding: EdgeInsets.all(16),
+                  ),
+                  maxLines: null,
+                  autofocus: true,
+                  textAlignVertical: TextAlignVertical.top,
+                  textInputAction: TextInputAction.send,
+                  onSubmitted: (value) => _send(),
                 ),
-                maxLines: null,
-                autofocus: true,
-                textAlignVertical: TextAlignVertical.top,
-                textInputAction: TextInputAction.send,
-                onSubmitted: (value) => _send(),
               ),
             ),
             if (_showEmojiPicker)

@@ -37,6 +37,9 @@ class _TopicDetailScreenState extends ConsumerState<TopicDetailScreen> {
 
   int _currentFloor = 0;
   int _totalReplies = 0;
+  int? _dragTargetFloor;
+  int? _dragStartFloor;
+  double _dragAccumulatedDx = 0;
   Timer? _saveTimer;
   bool _isSearching = false;
   bool _onlyAuthor = false;
@@ -359,7 +362,10 @@ class _TopicDetailScreenState extends ConsumerState<TopicDetailScreen> {
 
     final floor = closestFloor ?? 0;
     if (floor != _currentFloor) {
-      setState(() => _currentFloor = floor);
+      setState(() {
+        _currentFloor = floor;
+        _dragTargetFloor = null;
+      });
     }
 
     _saveTimer?.cancel();
@@ -385,6 +391,31 @@ class _TopicDetailScreenState extends ConsumerState<TopicDetailScreen> {
         alignment: 0.1,
       );
     }
+  }
+
+  void _jumpToFloorInstant(int floor) {
+    if (floor < 1 || floor > _totalReplies) return;
+    final key = _replyKeys[floor];
+    if (key?.currentContext != null) {
+      Scrollable.ensureVisible(
+        key!.currentContext!,
+        duration: Duration.zero,
+        curve: Curves.linear,
+        alignment: 0.1,
+      );
+    }
+  }
+
+  void _commitDragJump() {
+    final target = _dragTargetFloor;
+    if (target != null && target != _currentFloor) {
+      _jumpToFloorInstant(target);
+    }
+    setState(() {
+      _dragTargetFloor = null;
+      _dragStartFloor = null;
+      _dragAccumulatedDx = 0;
+    });
   }
 
   void _showFloorPicker() {
@@ -458,7 +489,16 @@ class _TopicDetailScreenState extends ConsumerState<TopicDetailScreen> {
   }
 
   void _handleQuote(Reply reply) {
-    final text = '@${reply.member.username} ';
+    String plain = reply.content?.trim() ?? '';
+    if (plain.isEmpty && reply.contentRendered != null) {
+      plain = reply.contentRendered!
+          .replaceAll(RegExp(r'<[^>]*>'), ' ')
+          .replaceAll(RegExp(r'\s+'), ' ')
+          .trim();
+    }
+    if (plain.length > 80) plain = '${plain.substring(0, 80)}…';
+    final quoteBlock = plain.isNotEmpty ? '\n> $plain\n\n' : '\n';
+    final text = '@${reply.member.username} $quoteBlock';
     _openReplySheet(initialText: text);
   }
 
@@ -788,28 +828,41 @@ class _TopicDetailScreenState extends ConsumerState<TopicDetailScreen> {
               bottom: 88,
               right: 16,
               child: GestureDetector(
-                onTap: _showFloorPicker,
+                onTap: () {
+                  setState(() => _dragTargetFloor = null);
+                  _showFloorPicker();
+                },
+                onHorizontalDragStart: (_) {
+                  _dragStartFloor = _currentFloor;
+                  _dragAccumulatedDx = 0;
+                  setState(() => _dragTargetFloor = null);
+                },
                 onHorizontalDragUpdate: (details) {
-                  if (_totalReplies <= 1) return;
+                  if (_totalReplies <= 1 || _dragStartFloor == null) return;
+                  _dragAccumulatedDx += details.delta.dx;
                   const sensitivity = 30.0;
-                  final deltaFloor = (-details.delta.dx / sensitivity).round();
-                  if (deltaFloor == 0) return;
-                  final target = (_currentFloor + deltaFloor).clamp(1, _totalReplies);
-                  if (target != _currentFloor) {
-                    _jumpToFloor(target);
+                  final deltaFloor = (-_dragAccumulatedDx / sensitivity).round();
+                  final target = (_dragStartFloor! + deltaFloor).clamp(1, _totalReplies);
+                  if (target != _dragTargetFloor) {
+                    setState(() => _dragTargetFloor = target);
+                    HapticFeedback.lightImpact();
                   }
                 },
+                onHorizontalDragEnd: (_) => _commitDragJump(),
+                onHorizontalDragCancel: _commitDragJump,
                 child: GlassContainer(
                   shape: LiquidRoundedSuperellipse(borderRadius: 20),
                   padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 8),
                   child: Text(
-                    _currentFloor > 0
-                        ? '$_currentFloor / $_totalReplies'
+                    (_dragTargetFloor ?? _currentFloor) > 0
+                        ? '${_dragTargetFloor ?? _currentFloor} / $_totalReplies'
                         : '0 / $_totalReplies',
                     style: TextStyle(
                       fontSize: 13,
                       fontWeight: FontWeight.w600,
-                      color: Theme.of(context).colorScheme.onPrimaryContainer,
+                      color: _dragTargetFloor != null
+                          ? Theme.of(context).colorScheme.primary
+                          : Theme.of(context).colorScheme.onPrimaryContainer,
                     ),
                   ),
                 ),
