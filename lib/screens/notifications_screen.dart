@@ -1,6 +1,8 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:liquid_glass_widgets/liquid_glass_widgets.dart';
 import 'package:url_launcher/url_launcher.dart';
+import '../providers/notifications_provider.dart';
 import '../providers/notification_provider.dart';
 import '../providers/notifications_provider.dart';
 import '../widgets/cached_avatar.dart';
@@ -65,8 +67,7 @@ class _NotificationsScreenState extends ConsumerState<NotificationsScreen> {
         title: const Text('通知'),
         centerTitle: true,
         actions: [
-          IconButton(
-            tooltip: '刷新',
+          GlassIconButton(
             onPressed: () {
               ref.invalidate(paginatedNotificationsProvider);
               ref.read(unreadCountProvider.notifier).refresh();

@@ -868,12 +868,12 @@ class _TopicDetailScreenState extends ConsumerState<TopicDetailScreen> {
             child: SizedBox(
               width: 56,
               height: 56,
-              child: FloatingActionButton(
-                heroTag: 'reply',
-                onPressed: () => _openReplySheet(),
-                elevation: 0,
-                backgroundColor: Theme.of(context).colorScheme.primary,
-                child: const Icon(Icons.reply),
+              child: GlassButton(
+                icon: const Icon(Icons.reply),
+                onTap: () => _openReplySheet(),
+                width: 56,
+                height: 56,
+                glowColor: Theme.of(context).colorScheme.primary.withValues(alpha: 0.5),
               ),
             ),
           ),

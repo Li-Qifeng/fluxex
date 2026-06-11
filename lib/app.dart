@@ -208,7 +208,20 @@ class _V2exAppState extends ConsumerState<V2exApp> {
               data: MediaQuery.of(context).copyWith(
                 textScaler: TextScaler.linear(settings.textScale),
               ),
-              child: child!,
+              child: GlassTheme(
+                data: GlassThemeData.simple(
+                  blur: 6,
+                  thickness: 24,
+                  quality: GlassQuality.standard,
+                  chromaticAberration: 0.15,
+                  lightIntensity: 0.75,
+                  ambientStrength: 0.1,
+                  refractiveIndex: 1.4,
+                  saturation: 1.0,
+                  borderRadius: 16,
+                ),
+                child: child!,
+              ),
             );
           },
           routerConfig: appRouter,

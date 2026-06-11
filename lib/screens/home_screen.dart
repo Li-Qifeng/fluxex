@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
+import 'package:liquid_glass_widgets/liquid_glass_widgets.dart';
 import '../models/topic_list_result.dart';
 import '../providers/auth_provider.dart';
 import '../providers/settings_provider.dart';
@@ -193,9 +194,8 @@ class _HomeScreenState extends ConsumerState<HomeScreen>
           centerTitle: true,
           actions: [
             if (auth.isLoggedIn)
-              IconButton(
+              GlassIconButton(
                 icon: const Icon(Icons.add),
-                tooltip: '发布新话题',
                 onPressed: () async {
                   final result = await context.push('/create-topic');
                   if (result == true) {
