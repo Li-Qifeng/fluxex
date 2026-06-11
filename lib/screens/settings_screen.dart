@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:package_info_plus/package_info_plus.dart';
+import '../providers/auth_provider.dart';
 import '../providers/settings_provider.dart';
 import '../utils/app_toast.dart';
 import '../utils/db_helper.dart';
@@ -34,6 +35,66 @@ class _SettingsScreenState extends ConsumerState<SettingsScreen> {
       ),
       body: ListView(
         children: [
+          // 用户信息卡片
+          Consumer(
+            builder: (context, ref, child) {
+              final auth = ref.watch(authProvider);
+              return Padding(
+                padding: const EdgeInsets.fromLTRB(16, 12, 16, 4),
+                child: Card(
+                  elevation: 0,
+                  color: cs.surfaceContainerHighest.withValues(alpha: 0.4),
+                  child: Padding(
+                    padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 14),
+                    child: Row(
+                      children: [
+                        CircleAvatar(
+                          radius: 22,
+                          backgroundColor: auth.isLoggedIn ? cs.primaryContainer : cs.surfaceContainerHighest,
+                          child: Icon(
+                            auth.isLoggedIn ? Icons.person : Icons.person_outline,
+                            color: auth.isLoggedIn ? cs.onPrimaryContainer : cs.outline,
+                          ),
+                        ),
+                        const SizedBox(width: 14),
+                        Expanded(
+                          child: Column(
+                            crossAxisAlignment: CrossAxisAlignment.start,
+                            children: [
+                              Text(
+                                auth.isLoggedIn ? (auth.username ?? '已登录') : '未登录',
+                                style: Theme.of(context).textTheme.titleMedium?.copyWith(
+                                  fontWeight: FontWeight.w600,
+                                ),
+                              ),
+                              if (auth.username != null)
+                                Text(
+                                  auth.username!,
+                                  style: TextStyle(
+                                    fontSize: 13,
+                                    color: cs.onSurfaceVariant,
+                                  ),
+                                ),
+                            ],
+                          ),
+                        ),
+                        if (auth.isLoggedIn)
+                          IconButton(
+                            icon: const Icon(Icons.logout, size: 20),
+                            color: cs.error,
+                            onPressed: () {
+                              ref.read(authProvider.notifier).logout();
+                              AppToast.success(context, '已退出登录');
+                            },
+                          ),
+                      ],
+                    ),
+                  ),
+                ),
+              );
+            },
+          ),
+          const SizedBox(height: 8),
           // 主题模式
           _SectionTitle(title: '外观', colorScheme: cs),
           Card(

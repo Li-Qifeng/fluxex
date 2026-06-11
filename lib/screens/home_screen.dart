@@ -1,6 +1,7 @@
+import 'dart:ui';
 import 'package:flutter/material.dart';
-import 'package:flutter/services.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:flutter/services.dart';
 import 'package:go_router/go_router.dart';
 import 'package:liquid_glass_widgets/liquid_glass_widgets.dart';
 import '../models/topic_list_result.dart';
@@ -127,6 +128,9 @@ class _HomeScreenState extends ConsumerState<HomeScreen>
             return EmptyState(onRetry: onRefresh);
           }
           return ListView.builder(
+            padding: EdgeInsets.only(
+              top: MediaQuery.paddingOf(context).top + kToolbarHeight + 48,
+            ),
             itemCount: filteredTopics.length + (result.fromCache ? 1 : 0) + 1,
             itemBuilder: (context, index) {
               if (result.fromCache && index == 0) {
@@ -189,6 +193,7 @@ class _HomeScreenState extends ConsumerState<HomeScreen>
         }
       },
       child: Scaffold(
+        extendBodyBehindAppBar: true,
         appBar: AppBar(
           title: const Text('V2EX'),
           centerTitle: true,
@@ -235,6 +240,22 @@ class _HomeScreenState extends ConsumerState<HomeScreen>
                   }
                 },
                 showSelectedIcon: false,
+              ),
+            ),
+          ),
+          flexibleSpace: ClipRect(
+            child: BackdropFilter(
+              filter: ImageFilter.blur(sigmaX: 18, sigmaY: 18),
+              child: Container(
+                decoration: BoxDecoration(
+                  color: Theme.of(context).colorScheme.surface.withValues(alpha: 0.55),
+                  border: Border(
+                    bottom: BorderSide(
+                      color: Theme.of(context).colorScheme.outline.withValues(alpha: 0.1),
+                      width: 0.5,
+                    ),
+                  ),
+                ),
               ),
             ),
           ),

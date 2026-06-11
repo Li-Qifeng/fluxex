@@ -1,5 +1,6 @@
 import 'dart:async';
 import 'dart:io' show Directory, File;
+import 'dart:ui';
 import 'package:flutter/material.dart';
 import 'package:flutter/cupertino.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
@@ -390,6 +391,29 @@ class _TopicDetailScreenState extends ConsumerState<TopicDetailScreen> {
         curve: Curves.easeInOut,
         alignment: 0.1,
       );
+      return;
+    }
+
+    // Fallback: proportional scroll estimation + retry after build
+    final maxExtent = _scrollController.position.maxScrollExtent;
+    final estimated = ((floor - 1) / _totalReplies) * maxExtent;
+    await _scrollController.animateTo(
+      estimated.clamp(0.0, maxExtent),
+      duration: const Duration(milliseconds: 300),
+      curve: Curves.easeInOut,
+    );
+
+    // Wait for target item to be built by SliverList, then precisely position
+    await Future.delayed(const Duration(milliseconds: 250));
+    if (!mounted) return;
+    final retryKey = _replyKeys[floor];
+    if (retryKey?.currentContext != null) {
+      await Scrollable.ensureVisible(
+        retryKey!.currentContext!,
+        duration: const Duration(milliseconds: 200),
+        curve: Curves.easeInOut,
+        alignment: 0.1,
+      );
     }
   }
 
@@ -598,6 +622,7 @@ class _TopicDetailScreenState extends ConsumerState<TopicDetailScreen> {
     final repliesAsync = ref.watch(topicRepliesProvider(widget.topicId));
 
     return Scaffold(
+      extendBodyBehindAppBar: true,
       appBar: AppBar(
         title: _isSearching
             ? TextField(
@@ -742,6 +767,22 @@ class _TopicDetailScreenState extends ConsumerState<TopicDetailScreen> {
               },
             ),
         ],
+        flexibleSpace: ClipRect(
+          child: BackdropFilter(
+            filter: ImageFilter.blur(sigmaX: 18, sigmaY: 18),
+            child: Container(
+              decoration: BoxDecoration(
+                color: Theme.of(context).colorScheme.surface.withValues(alpha: 0.55),
+                border: Border(
+                  bottom: BorderSide(
+                    color: Theme.of(context).colorScheme.outline.withValues(alpha: 0.1),
+                    width: 0.5,
+                  ),
+                ),
+              ),
+            ),
+          ),
+        ),
       ),
       body: topicAsync.when(
         data: (topic) {
@@ -756,6 +797,11 @@ class _TopicDetailScreenState extends ConsumerState<TopicDetailScreen> {
             child: CustomScrollView(
               controller: _scrollController,
               slivers: [
+                SliverToBoxAdapter(
+                  child: SizedBox(
+                    height: MediaQuery.paddingOf(context).top + kToolbarHeight,
+                  ),
+                ),
                 SliverToBoxAdapter(
                   child: TopicHeader(topic: topic),
                 ),
