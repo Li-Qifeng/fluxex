@@ -44,6 +44,99 @@ class _ProfileScreenState extends ConsumerState<ProfileScreen> {
     }
   }
 
+  Future<void> _showBrowseHistory(BuildContext ctx) async {
+    final history = await DbHelper.getBrowseHistory(limit: 30);
+    if (!ctx.mounted) return;
+    showModalBottomSheet(
+      context: ctx,
+      isScrollControlled: true,
+      backgroundColor: Theme.of(ctx).colorScheme.surface,
+      shape: const RoundedRectangleBorder(
+        borderRadius: BorderRadius.vertical(top: Radius.circular(24)),
+      ),
+      builder: (sheetCtx) => SafeArea(
+        child: SizedBox(
+          height: MediaQuery.of(sheetCtx).size.height * 0.55,
+          child: Column(
+            children: [
+              Container(
+                margin: const EdgeInsets.only(top: 8, bottom: 4),
+                width: 36,
+                height: 4,
+                decoration: BoxDecoration(
+                  color: Theme.of(sheetCtx).colorScheme.outline.withValues(alpha: 0.4),
+                  borderRadius: BorderRadius.circular(2),
+                ),
+              ),
+              Padding(
+                padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
+                child: Row(
+                  children: [
+                    Text(
+                      '浏览历史',
+                      style: Theme.of(sheetCtx).textTheme.titleMedium?.copyWith(
+                        fontWeight: FontWeight.w600,
+                      ),
+                    ),
+                    const Spacer(),
+                    TextButton(
+                      onPressed: () async {
+                        final db = await DbHelper.database;
+                        await db.delete('browse_history');
+                        if (ctx.mounted) {
+                          Navigator.pop(sheetCtx);
+                          setState(() => _historyCount = 0);
+                        }
+                      },
+                      child: const Text('清空'),
+                    ),
+                  ],
+                ),
+              ),
+              const Divider(height: 1),
+              Expanded(
+                child: history.isEmpty
+                    ? const Center(child: Text('暂无浏览记录'))
+                    : ListView.builder(
+                        itemCount: history.length,
+                        itemBuilder: (_, index) {
+                          final entry = history[index];
+                          final title = (entry['title'] as String?) ?? '无标题';
+                          final floor = (entry['last_floor'] as int?) ?? 0;
+                          final viewedAt = DateTime.fromMillisecondsSinceEpoch(
+                            entry['viewed_at'] as int,
+                          );
+                          final timeStr = '${viewedAt.month}/${viewedAt.day} ${viewedAt.hour.toString().padLeft(2, '0')}:${viewedAt.minute.toString().padLeft(2, '0')}';
+                          return ListTile(
+                            dense: true,
+                            leading: const Icon(Icons.history, size: 20),
+                            title: Text(
+                              title,
+                              maxLines: 1,
+                              overflow: TextOverflow.ellipsis,
+                            ),
+                            subtitle: Text(
+                              floor > 0 ? '第 $floor 楼 · $timeStr' : timeStr,
+                              style: TextStyle(
+                                fontSize: 12,
+                                color: Theme.of(sheetCtx).colorScheme.outline,
+                              ),
+                            ),
+                            onTap: () {
+                              Navigator.pop(sheetCtx);
+                              context.push('/topic/${entry['topic_id']}');
+                            },
+                          );
+                        },
+                      ),
+              ),
+            ],
+          ),
+        ),
+      ),
+    );
+  }
+
   @override
   void dispose() {
     _cookieController.dispose();
@@ -133,7 +226,7 @@ class _ProfileScreenState extends ConsumerState<ProfileScreen> {
                 child: _StatItem(
                   count: _historyCount,
                   label: '浏览',
-                  onTap: null,
+                  onTap: () => _showBrowseHistory(context),
                 ),
               ),
               Expanded(
@@ -338,97 +431,121 @@ class _ProfileHeaderCard extends ConsumerWidget {
         padding: const EdgeInsets.all(20),
         child: memberAsync.when(
           data: (member) {
-            return Column(
-              children: [
-                CachedAvatar(
-                  imageUrl: member?.avatarLarge,
-                  radius: 40,
-                  fallbackText: auth.username,
-                ),
-                const SizedBox(height: 12),
-                Row(
-                  mainAxisAlignment: MainAxisAlignment.center,
+            final hasPro = member?.lastModified != null && member!.lastModified > 0;
+            return InkWell(
+              onTap: auth.username != null
+                  ? () => context.push('/member/${auth.username}')
+                  : null,
+              borderRadius: BorderRadius.circular(12),
+              child: Padding(
+                padding: const EdgeInsets.all(8),
+                child: Column(
                   children: [
-                    Flexible(
-                      child: Text(
-                        auth.username ?? '用户',
-                        style: Theme.of(context).textTheme.titleLarge?.copyWith(
-                          fontWeight: FontWeight.w700,
+                    CachedAvatar(
+                      imageUrl: member?.avatarLarge,
+                      radius: 44,
+                      fallbackText: auth.username,
+                    ),
+                    const SizedBox(height: 14),
+                    Row(
+                      mainAxisAlignment: MainAxisAlignment.center,
+                      children: [
+                        Flexible(
+                          child: Text(
+                            auth.username ?? '用户',
+                            style: Theme.of(context).textTheme.titleLarge?.copyWith(
+                              fontWeight: FontWeight.w700,
+                            ),
+                            overflow: TextOverflow.ellipsis,
+                          ),
                         ),
-                        overflow: TextOverflow.ellipsis,
-                      ),
+                        if (hasPro) ...[
+                          const SizedBox(width: 6),
+                          Container(
+                            padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 2),
+                            decoration: BoxDecoration(
+                              color: cs.primaryContainer,
+                              borderRadius: BorderRadius.circular(10),
+                            ),
+                            child: Text(
+                              'Pro',
+                              style: TextStyle(
+                                fontSize: 11,
+                                fontWeight: FontWeight.w700,
+                                color: cs.onPrimaryContainer,
+                              ),
+                            ),
+                          ),
+                        ],
+                      ],
                     ),
-                    const SizedBox(width: 6),
-                    Container(
-                      padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 2),
-                      decoration: BoxDecoration(
-                        color: cs.primaryContainer,
-                        borderRadius: BorderRadius.circular(10),
-                      ),
-                      child: Text(
-                        'Pro',
-                        style: TextStyle(
-                          fontSize: 11,
-                          fontWeight: FontWeight.w700,
-                          color: cs.onPrimaryContainer,
-                        ),
-                      ),
-                    ),
-                  ],
-                ),
-                if (member?.tagline != null && member!.tagline!.isNotEmpty) ...[
-                  const SizedBox(height: 6),
-                  Text(
-                    member.tagline!,
-                    style: TextStyle(
-                      fontSize: 13,
-                      color: cs.onSurfaceVariant,
-                    ),
-                  ),
-                ],
-                if (member?.bio != null && member!.bio!.isNotEmpty) ...[
-                  const SizedBox(height: 8),
-                  Text(
-                    member.bio!,
-                    style: TextStyle(
-                      fontSize: 12,
-                      color: cs.outline,
-                      height: 1.4,
-                    ),
-                    textAlign: TextAlign.center,
-                    maxLines: 3,
-                    overflow: TextOverflow.ellipsis,
-                  ),
-                ],
-                if (member?.location != null && member!.location!.isNotEmpty) ...[
-                  const SizedBox(height: 8),
-                  Row(
-                    mainAxisAlignment: MainAxisAlignment.center,
-                    children: [
-                      Icon(Icons.location_on_outlined, size: 14, color: cs.outline),
-                      const SizedBox(width: 4),
+                    if (member?.tagline != null && member!.tagline!.isNotEmpty) ...[
+                      const SizedBox(height: 6),
                       Text(
-                        member.location!,
-                        style: TextStyle(fontSize: 12, color: cs.outline),
+                        member.tagline!,
+                        style: TextStyle(
+                          fontSize: 13,
+                          color: cs.onSurfaceVariant,
+                        ),
                       ),
                     ],
-                  ),
-                ],
-              ],
+                    if (member?.bio != null && member!.bio!.isNotEmpty) ...[
+                      const SizedBox(height: 8),
+                      Text(
+                        member.bio!,
+                        style: TextStyle(
+                          fontSize: 12,
+                          color: cs.outline,
+                          height: 1.4,
+                        ),
+                        textAlign: TextAlign.center,
+                        maxLines: 3,
+                        overflow: TextOverflow.ellipsis,
+                      ),
+                    ],
+                    if (member?.location != null && member!.location!.isNotEmpty) ...[
+                      const SizedBox(height: 8),
+                      Row(
+                        mainAxisAlignment: MainAxisAlignment.center,
+                        children: [
+                          Icon(Icons.location_on_outlined, size: 14, color: cs.outline),
+                          const SizedBox(width: 4),
+                          Text(
+                            member.location!,
+                            style: TextStyle(fontSize: 12, color: cs.outline),
+                          ),
+                        ],
+                      ),
+                    ],
+                    if (member != null) ...[
+                      const SizedBox(height: 10),
+                      TextButton.icon(
+                        onPressed: () => context.push('/member/${auth.username}'),
+                        icon: const Icon(Icons.open_in_new, size: 14),
+                        label: const Text('查看主页'),
+                        style: TextButton.styleFrom(
+                          visualDensity: VisualDensity.compact,
+                          padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 4),
+                        ),
+                      ),
+                    ],
+                  ],
+                ),
+              ),
             );
           },
           loading: () => const SizedBox(
-            height: 120,
+            height: 180,
             child: Center(child: CircularProgressIndicator(strokeWidth: 2)),
           ),
-          error: (_, __) => Column(
+          error: (err, __) => Column(
             children: [
               CachedAvatar(
                 imageUrl: null,
-                radius: 40,
+                radius: 44,
                 fallbackText: auth.username,
               ),
-              const SizedBox(height: 12),
+              const SizedBox(height: 14),
               Text(
                 auth.username ?? '用户',
                 style: Theme.of(context).textTheme.titleLarge?.copyWith(
@@ -439,6 +556,17 @@ class _ProfileHeaderCard extends ConsumerWidget {
               Text(
                 '已登录',
                 style: TextStyle(fontSize: 13, color: cs.onSurfaceVariant),
+              ),
+              const SizedBox(height: 8),
+              Text(
+                '信息加载失败: $err',
+                style: TextStyle(fontSize: 11, color: cs.error),
+                textAlign: TextAlign.center,
+              ),
+              const SizedBox(height: 4),
+              TextButton(
+                onPressed: () => ref.invalidate(currentMemberProvider),
+                child: const Text('重试'),
               ),
             ],
           ),

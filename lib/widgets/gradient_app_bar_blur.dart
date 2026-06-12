@@ -9,8 +9,8 @@ class GradientAppBarBlur extends StatelessWidget {
 
   const GradientAppBarBlur({
     super.key,
-    this.maxBlur = 32,
-    this.tintAlpha = 0.55,
+    this.maxBlur = 48,
+    this.tintAlpha = 0.72,
   });
 
   @override
@@ -26,14 +26,15 @@ class GradientAppBarBlur extends StatelessWidget {
               end: Alignment.bottomCenter,
               colors: [
                 cs.surface.withValues(alpha: tintAlpha),
-                cs.surface.withValues(alpha: tintAlpha * 0.45),
+                cs.surface.withValues(alpha: tintAlpha * 0.65),
+                cs.surface.withValues(alpha: tintAlpha * 0.30),
                 cs.surface.withValues(alpha: 0.0),
               ],
-              stops: const [0.0, 0.55, 1.0],
+              stops: const [0.0, 0.35, 0.65, 1.0],
             ),
             border: Border(
               bottom: BorderSide(
-                color: cs.outline.withValues(alpha: 0.08),
+                color: cs.outline.withValues(alpha: 0.05),
                 width: 0.5,
               ),
             ),

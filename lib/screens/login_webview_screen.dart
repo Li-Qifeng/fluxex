@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_inappwebview/flutter_inappwebview.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import '../providers/api_client.dart';
 import '../providers/auth_provider.dart';
 
 class LoginWebViewScreen extends ConsumerStatefulWidget {
@@ -13,34 +14,89 @@ class LoginWebViewScreen extends ConsumerStatefulWidget {
 class _LoginWebViewScreenState extends ConsumerState<LoginWebViewScreen> {
   double _progress = 0;
 
+  Future<String?> _extractUsernameFromPage(InAppWebViewController controller) async {
+    try {
+      final result = await controller.evaluateJavascript(source: '''
+        (() => {
+          // Strategy 1: Find avatar-linked member in top nav / sidebar
+          const avatarSelectors = [
+            '#Top img.avatar',
+            '#Rightbar img.avatar',
+            '.content img.avatar',
+            'img.avatar'
+          ];
+          for (const sel of avatarSelectors) {
+            const img = document.querySelector(sel);
+            if (img) {
+              const a = img.closest('a[href^="/member/"]');
+              if (a) {
+                const m = a.getAttribute('href').match(/\\/member\\/([^/]+)/);
+                if (m) return m[1];
+              }
+            }
+          }
+          // Strategy 2: Direct link with /member/ prefix
+          const links = document.querySelectorAll('a[href^="/member/"]');
+          for (const a of links) {
+            const href = a.getAttribute('href');
+            const m = href.match(/\\/member\\/([^/]+)/);
+            if (m) {
+              const name = m[1];
+              // Skip template literals like encodeURIComponent(memberUsername)
+              if (name && name !== 'encodeURIComponent(memberUsername)') return name;
+            }
+          }
+          return null;
+        })()
+      ''');
+      if (result != null && result.toString().isNotEmpty && result.toString() != 'null') {
+        return result.toString();
+      }
+    } catch (_) {}
+    return null;
+  }
+
+  Future<String?> _resolveUsernameFromMyPage() async {
+    try {
+      final api = V2exApiClient();
+      final dio = api.dio;
+      final originalFollowRedirects = dio.options.followRedirects;
+      final originalValidateStatus = dio.options.validateStatus;
+      dio.options.followRedirects = false;
+      dio.options.validateStatus = (status) => status != null && status < 400;
+      final response = await dio.get('/my/');
+      dio.options.followRedirects = originalFollowRedirects;
+      dio.options.validateStatus = originalValidateStatus;
+      if (response.statusCode == 302 || response.statusCode == 301) {
+        final location = response.headers.value('location');
+        if (location != null) {
+          final match = RegExp(r'/member/([^/]+)').firstMatch(location);
+          if (match != null) return match.group(1);
+        }
+      }
+    } catch (_) {}
+    return null;
+  }
+
   Future<void> _extractAndSaveCookie(InAppWebViewController controller) async {
     final cookies = await CookieManager.instance().getCookies(url: WebUri('https://www.v2ex.com'));
     final a2Cookie = cookies.where((c) => c.name == 'A2').firstOrNull;
-    if (a2Cookie != null && a2Cookie.value.isNotEmpty) {
-      // 通过 JS 提取当前登录用户名
-      String? username;
-      try {
-        final result = await controller.evaluateJavascript(source: '''
-          (() => {
-            const a = document.querySelector('a[href^="/member/"]');
-            if (a) {
-              const m = a.getAttribute('href').match(/\/member\/([^/]+)/);
-              return m ? m[1] : null;
-            }
-            return null;
-          })()
-        ''');
-        if (result != null && result.toString().isNotEmpty && result.toString() != 'null') {
-          username = result.toString();
-        }
-      } catch (_) {}
-      await ref.read(authProvider.notifier).setA2Cookie(a2Cookie.value, username: username);
-      if (mounted) {
-        ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(content: Text(username != null ? '登录成功: $username' : '登录成功')),
-        );
-        Navigator.of(context).pop(true);
-      }
+    if (a2Cookie == null || a2Cookie.value.isEmpty) return;
+
+    // Strategy 1: Extract from current page DOM
+    String? username = await _extractUsernameFromPage(controller);
+
+    // Strategy 2: Resolve via /my/ redirect using dio
+    if (username == null || username.isEmpty) {
+      username = await _resolveUsernameFromMyPage();
+    }
+
+    await ref.read(authProvider.notifier).setA2Cookie(a2Cookie.value, username: username);
+    if (mounted) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(content: Text(username != null && username.isNotEmpty ? '登录成功: $username' : '登录成功')),
+      );
+      Navigator.of(context).pop(true);
     }
   }
 

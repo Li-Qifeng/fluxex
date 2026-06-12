@@ -30,11 +30,40 @@ class AuthNotifier extends StateNotifier<AuthState> {
 
   Future<void> _loadPersistedCookie() async {
     final a2 = await _secure.read(key: _a2Key);
-    final username = await _secure.read(key: _usernameKey);
+    var username = await _secure.read(key: _usernameKey);
     if (a2 != null && a2.isNotEmpty) {
       await _injectA2(a2);
+      // If username missing but cookie valid, try resolving from /my/ redirect
+      if (username == null || username.isEmpty) {
+        username = await _resolveUsernameFromMyPage();
+        if (username != null && username.isNotEmpty) {
+          await _secure.write(key: _usernameKey, value: username);
+        }
+      }
       state = state.copyWith(isLoggedIn: true, username: username);
     }
+  }
+
+  Future<String?> _resolveUsernameFromMyPage() async {
+    try {
+      final api = V2exApiClient();
+      final dio = api.dio;
+      final originalFollowRedirects = dio.options.followRedirects;
+      final originalValidateStatus = dio.options.validateStatus;
+      dio.options.followRedirects = false;
+      dio.options.validateStatus = (status) => status != null && status < 400;
+      final response = await dio.get('/my/');
+      dio.options.followRedirects = originalFollowRedirects;
+      dio.options.validateStatus = originalValidateStatus;
+      if (response.statusCode == 302 || response.statusCode == 301) {
+        final location = response.headers.value('location');
+        if (location != null) {
+          final match = RegExp(r'/member/([^/]+)').firstMatch(location);
+          if (match != null) return match.group(1);
+        }
+      }
+    } catch (_) {}
+    return null;
   }
 
   Future<void> _injectA2(String a2Value) async {
