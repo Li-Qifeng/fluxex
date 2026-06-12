@@ -2,7 +2,6 @@ import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:go_router/go_router.dart';
 import 'package:intl/intl.dart';
-import 'package:liquid_glass_widgets/liquid_glass_widgets.dart';
 import 'package:share_plus/share_plus.dart';
 import '../models/topic.dart';
 import '../utils/db_helper.dart';
@@ -36,12 +35,12 @@ class TopicCard extends StatelessWidget {
         final titleColor = isRead ? colorScheme.outline : colorScheme.onSurface;
         final metaColor = isRead ? colorScheme.outline.withValues(alpha: 0.7) : colorScheme.onSurfaceVariant;
 
-        return GlassCard(
+        return Card(
           margin: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
-          padding: EdgeInsets.zero,
-          shape: const LiquidRoundedSuperellipse(borderRadius: 14),
+          elevation: 0,
+          shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(14)),
           child: InkWell(
-            borderRadius: BorderRadius.circular(12),
+            borderRadius: BorderRadius.circular(14),
             onTap: () => context.push('/topic/${topic.id}'),
             onLongPress: () => _showTopicMenu(context, topic),
             child: Row(
