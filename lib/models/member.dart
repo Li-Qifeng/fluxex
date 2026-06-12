@@ -15,6 +15,7 @@ class Member {
   final String avatarLarge;
   final int created;
   final int lastModified;
+  final int? pro;
 
   Member({
     required this.id,
@@ -33,6 +34,7 @@ class Member {
     required this.avatarLarge,
     required this.created,
     required this.lastModified,
+    this.pro,
   });
 
   factory Member.fromJson(Map<String, dynamic> json) {
@@ -53,6 +55,7 @@ class Member {
       avatarLarge: json['avatar_large'] as String,
       created: json['created'] as int,
       lastModified: json['last_modified'] as int,
+      pro: json['pro'] as int?,
     );
   }
 
@@ -73,5 +76,6 @@ class Member {
     'avatar_large': avatarLarge,
     'created': created,
     'last_modified': lastModified,
+    'pro': pro,
   };
 }

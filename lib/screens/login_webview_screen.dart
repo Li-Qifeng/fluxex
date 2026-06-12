@@ -16,9 +16,8 @@ class _LoginWebViewScreenState extends ConsumerState<LoginWebViewScreen> {
 
   Future<String?> _extractUsernameFromPage(InAppWebViewController controller) async {
     try {
-      final result = await controller.evaluateJavascript(source: '''
+      final result = await controller.evaluateJavascript(source: r'''
         (() => {
-          // Strategy 1: Find avatar-linked member in top nav / sidebar
           const avatarSelectors = [
             '#Top img.avatar',
             '#Rightbar img.avatar',
@@ -30,20 +29,22 @@ class _LoginWebViewScreenState extends ConsumerState<LoginWebViewScreen> {
             if (img) {
               const a = img.closest('a[href^="/member/"]');
               if (a) {
-                const m = a.getAttribute('href').match(/\\/member\\/([^/]+)/);
-                if (m) return m[1];
+                const href = a.getAttribute('href');
+                if (href && href.startsWith('/member/')) {
+                  const name = href.slice(8);
+                  if (name && name.indexOf('/') === -1 &&
+                      name !== 'encodeURIComponent(memberUsername)') return name;
+                }
               }
             }
           }
-          // Strategy 2: Direct link with /member/ prefix
           const links = document.querySelectorAll('a[href^="/member/"]');
           for (const a of links) {
             const href = a.getAttribute('href');
-            const m = href.match(/\\/member\\/([^/]+)/);
-            if (m) {
-              const name = m[1];
-              // Skip template literals like encodeURIComponent(memberUsername)
-              if (name && name !== 'encodeURIComponent(memberUsername)') return name;
+            if (href && href.startsWith('/member/')) {
+              const name = href.slice(8);
+              if (name && name.indexOf('/') === -1 &&
+                  name !== 'encodeURIComponent(memberUsername)') return name;
             }
           }
           return null;

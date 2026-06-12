@@ -427,148 +427,145 @@ class _ProfileHeaderCard extends ConsumerWidget {
     }
 
     return Card(
-      child: Padding(
-        padding: const EdgeInsets.all(20),
-        child: memberAsync.when(
-          data: (member) {
-            final hasPro = member?.lastModified != null && member!.lastModified > 0;
-            return InkWell(
-              onTap: auth.username != null
-                  ? () => context.push('/member/${auth.username}')
-                  : null,
-              borderRadius: BorderRadius.circular(12),
-              child: Padding(
-                padding: const EdgeInsets.all(8),
-                child: Column(
-                  children: [
-                    CachedAvatar(
-                      imageUrl: member?.avatarLarge,
-                      radius: 44,
-                      fallbackText: auth.username,
+      clipBehavior: Clip.hardEdge,
+      child: InkWell(
+        onTap: auth.username != null
+            ? () => context.push('/member/${auth.username}')
+            : null,
+        child: Padding(
+          padding: const EdgeInsets.all(20),
+          child: memberAsync.when(
+            data: (member) {
+              final hasPro = member?.pro != null;
+              return Column(
+                children: [
+                  CachedAvatar(
+                    imageUrl: member?.avatarLarge,
+                    radius: 44,
+                    fallbackText: auth.username,
+                  ),
+                  const SizedBox(height: 14),
+                  Row(
+                    mainAxisAlignment: MainAxisAlignment.center,
+                    children: [
+                      Flexible(
+                        child: Text(
+                          auth.username ?? '用户',
+                          style: Theme.of(context).textTheme.titleLarge?.copyWith(
+                            fontWeight: FontWeight.w700,
+                          ),
+                          overflow: TextOverflow.ellipsis,
+                        ),
+                      ),
+                      if (hasPro) ...[
+                        const SizedBox(width: 6),
+                        Container(
+                          padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 2),
+                          decoration: BoxDecoration(
+                            color: cs.primaryContainer,
+                            borderRadius: BorderRadius.circular(10),
+                          ),
+                          child: Text(
+                            'Pro',
+                            style: TextStyle(
+                              fontSize: 11,
+                              fontWeight: FontWeight.w700,
+                              color: cs.onPrimaryContainer,
+                            ),
+                          ),
+                        ),
+                      ],
+                    ],
+                  ),
+                  if (member?.tagline != null && member!.tagline!.isNotEmpty) ...[
+                    const SizedBox(height: 6),
+                    Text(
+                      member.tagline!,
+                      style: TextStyle(
+                        fontSize: 13,
+                        color: cs.onSurfaceVariant,
+                      ),
                     ),
-                    const SizedBox(height: 14),
+                  ],
+                  if (member?.bio != null && member!.bio!.isNotEmpty) ...[
+                    const SizedBox(height: 8),
+                    Text(
+                      member.bio!,
+                      style: TextStyle(
+                        fontSize: 12,
+                        color: cs.outline,
+                        height: 1.4,
+                      ),
+                      textAlign: TextAlign.center,
+                      maxLines: 3,
+                      overflow: TextOverflow.ellipsis,
+                    ),
+                  ],
+                  if (member?.location != null && member!.location!.isNotEmpty) ...[
+                    const SizedBox(height: 8),
                     Row(
                       mainAxisAlignment: MainAxisAlignment.center,
                       children: [
-                        Flexible(
-                          child: Text(
-                            auth.username ?? '用户',
-                            style: Theme.of(context).textTheme.titleLarge?.copyWith(
-                              fontWeight: FontWeight.w700,
-                            ),
-                            overflow: TextOverflow.ellipsis,
-                          ),
+                        Icon(Icons.location_on_outlined, size: 14, color: cs.outline),
+                        const SizedBox(width: 4),
+                        Text(
+                          member.location!,
+                          style: TextStyle(fontSize: 12, color: cs.outline),
                         ),
-                        if (hasPro) ...[
-                          const SizedBox(width: 6),
-                          Container(
-                            padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 2),
-                            decoration: BoxDecoration(
-                              color: cs.primaryContainer,
-                              borderRadius: BorderRadius.circular(10),
-                            ),
-                            child: Text(
-                              'Pro',
-                              style: TextStyle(
-                                fontSize: 11,
-                                fontWeight: FontWeight.w700,
-                                color: cs.onPrimaryContainer,
-                              ),
-                            ),
-                          ),
-                        ],
                       ],
                     ),
-                    if (member?.tagline != null && member!.tagline!.isNotEmpty) ...[
-                      const SizedBox(height: 6),
-                      Text(
-                        member.tagline!,
-                        style: TextStyle(
-                          fontSize: 13,
-                          color: cs.onSurfaceVariant,
-                        ),
-                      ),
-                    ],
-                    if (member?.bio != null && member!.bio!.isNotEmpty) ...[
-                      const SizedBox(height: 8),
-                      Text(
-                        member.bio!,
-                        style: TextStyle(
-                          fontSize: 12,
-                          color: cs.outline,
-                          height: 1.4,
-                        ),
-                        textAlign: TextAlign.center,
-                        maxLines: 3,
-                        overflow: TextOverflow.ellipsis,
-                      ),
-                    ],
-                    if (member?.location != null && member!.location!.isNotEmpty) ...[
-                      const SizedBox(height: 8),
-                      Row(
-                        mainAxisAlignment: MainAxisAlignment.center,
-                        children: [
-                          Icon(Icons.location_on_outlined, size: 14, color: cs.outline),
-                          const SizedBox(width: 4),
-                          Text(
-                            member.location!,
-                            style: TextStyle(fontSize: 12, color: cs.outline),
-                          ),
-                        ],
-                      ),
-                    ],
-                    if (member != null) ...[
-                      const SizedBox(height: 10),
-                      TextButton.icon(
-                        onPressed: () => context.push('/member/${auth.username}'),
-                        icon: const Icon(Icons.open_in_new, size: 14),
-                        label: const Text('查看主页'),
-                        style: TextButton.styleFrom(
-                          visualDensity: VisualDensity.compact,
-                          padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 4),
-                        ),
-                      ),
-                    ],
                   ],
+                  if (member != null) ...[
+                    const SizedBox(height: 10),
+                    TextButton.icon(
+                      onPressed: () => context.push('/member/${auth.username}'),
+                      icon: const Icon(Icons.open_in_new, size: 14),
+                      label: const Text('查看主页'),
+                      style: TextButton.styleFrom(
+                        visualDensity: VisualDensity.compact,
+                        padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 4),
+                      ),
+                    ),
+                  ],
+                ],
+              );
+            },
+            loading: () => const SizedBox(
+              height: 180,
+              child: Center(child: CircularProgressIndicator(strokeWidth: 2)),
+            ),
+            error: (err, __) => Column(
+              children: [
+                CachedAvatar(
+                  imageUrl: null,
+                  radius: 44,
+                  fallbackText: auth.username,
                 ),
-              ),
-            );
-          },
-          loading: () => const SizedBox(
-            height: 180,
-            child: Center(child: CircularProgressIndicator(strokeWidth: 2)),
-          ),
-          error: (err, __) => Column(
-            children: [
-              CachedAvatar(
-                imageUrl: null,
-                radius: 44,
-                fallbackText: auth.username,
-              ),
-              const SizedBox(height: 14),
-              Text(
-                auth.username ?? '用户',
-                style: Theme.of(context).textTheme.titleLarge?.copyWith(
-                  fontWeight: FontWeight.w700,
+                const SizedBox(height: 14),
+                Text(
+                  auth.username ?? '用户',
+                  style: Theme.of(context).textTheme.titleLarge?.copyWith(
+                    fontWeight: FontWeight.w700,
+                  ),
                 ),
-              ),
-              const SizedBox(height: 6),
-              Text(
-                '已登录',
-                style: TextStyle(fontSize: 13, color: cs.onSurfaceVariant),
-              ),
-              const SizedBox(height: 8),
-              Text(
-                '信息加载失败: $err',
-                style: TextStyle(fontSize: 11, color: cs.error),
-                textAlign: TextAlign.center,
-              ),
-              const SizedBox(height: 4),
-              TextButton(
-                onPressed: () => ref.invalidate(currentMemberProvider),
-                child: const Text('重试'),
-              ),
-            ],
+                const SizedBox(height: 6),
+                Text(
+                  '已登录',
+                  style: TextStyle(fontSize: 13, color: cs.onSurfaceVariant),
+                ),
+                const SizedBox(height: 8),
+                Text(
+                  '信息加载失败: $err',
+                  style: TextStyle(fontSize: 11, color: cs.error),
+                  textAlign: TextAlign.center,
+                ),
+                const SizedBox(height: 4),
+                TextButton(
+                  onPressed: () => ref.invalidate(currentMemberProvider),
+                  child: const Text('重试'),
+                ),
+              ],
+            ),
           ),
         ),
       ),
