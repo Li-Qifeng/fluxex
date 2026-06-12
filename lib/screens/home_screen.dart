@@ -103,17 +103,40 @@ class _HomeScreenState extends ConsumerState<HomeScreen>
     final latestAsync = ref.watch(latestTopicsProvider);
     final auth = ref.watch(authProvider);
 
+  Widget wrapForPullToRefresh(BuildContext ctx, Widget child) {
+    return LayoutBuilder(
+      builder: (context, constraints) => ListView(
+        physics: const AlwaysScrollableScrollPhysics(),
+        padding: EdgeInsets.zero,
+        children: [
+          SizedBox(
+            height: constraints.maxHeight > 0
+                ? constraints.maxHeight
+                : MediaQuery.of(context).size.height * 0.6,
+            child: Center(child: child),
+          ),
+        ],
+      ),
+    );
+  }
+
     Widget buildList(AsyncValue<TopicListResult> asyncValue, VoidCallback onRefresh) {
       return asyncValue.when(
         data: (result) {
           if (result.topics.isEmpty && result.error != null) {
-            return ErrorState(
-              message: '加载失败: ${result.error}',
-              onRetry: onRefresh,
+            return wrapForPullToRefresh(
+              context,
+              ErrorState(
+                message: '加载失败: ${result.error}',
+                onRetry: onRefresh,
+              ),
             );
           }
           if (result.topics.isEmpty) {
-            return EmptyState(onRetry: onRefresh);
+            return wrapForPullToRefresh(
+              context,
+              EmptyState(onRetry: onRefresh),
+            );
           }
           final blockedKeywords = ref.watch(settingsProvider).blockedKeywords;
           final filteredTopics = blockedKeywords.isEmpty
@@ -125,7 +148,10 @@ class _HomeScreenState extends ConsumerState<HomeScreen>
                   );
                 }).toList();
           if (filteredTopics.isEmpty) {
-            return EmptyState(onRetry: onRefresh);
+            return wrapForPullToRefresh(
+              context,
+              EmptyState(onRetry: onRefresh),
+            );
           }
           return ListView.builder(
             padding: EdgeInsets.only(
@@ -176,9 +202,12 @@ class _HomeScreenState extends ConsumerState<HomeScreen>
           );
         },
         loading: () => const TopicListShimmer(count: 6),
-        error: (err, stack) => ErrorState(
-          message: '加载失败: $err',
-          onRetry: onRefresh,
+        error: (err, stack) => wrapForPullToRefresh(
+          context,
+          ErrorState(
+            message: '加载失败: $err',
+            onRetry: onRefresh,
+          ),
         ),
       );
     }
@@ -243,7 +272,7 @@ class _HomeScreenState extends ConsumerState<HomeScreen>
               ),
             ),
           ),
-          flexibleSpace: const GradientAppBarBlur(maxBlur: 32, tintAlpha: 0.55),
+          flexibleSpace: const GradientAppBarBlur(),
         ),
         body: RefreshIndicator(
           onRefresh: () async {
