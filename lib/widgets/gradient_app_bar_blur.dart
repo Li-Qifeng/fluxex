@@ -19,23 +19,25 @@ class GradientAppBarBlur extends StatelessWidget {
     return ClipRect(
       child: BackdropFilter(
         filter: ImageFilter.blur(sigmaX: maxBlur, sigmaY: maxBlur),
-        child: Container(
-          decoration: BoxDecoration(
-            gradient: LinearGradient(
-              begin: Alignment.topCenter,
-              end: Alignment.bottomCenter,
-              colors: [
-                cs.surface.withValues(alpha: tintAlpha),
-                cs.surface.withValues(alpha: tintAlpha * 0.65),
-                cs.surface.withValues(alpha: tintAlpha * 0.30),
-                cs.surface.withValues(alpha: 0.0),
-              ],
-              stops: const [0.0, 0.35, 0.65, 1.0],
-            ),
-            border: Border(
-              bottom: BorderSide(
-                color: cs.outline.withValues(alpha: 0.05),
-                width: 0.5,
+        child: SizedBox.expand(
+          child: Container(
+            decoration: BoxDecoration(
+              gradient: LinearGradient(
+                begin: Alignment.topCenter,
+                end: Alignment.bottomCenter,
+                colors: [
+                  cs.surface.withValues(alpha: tintAlpha),
+                  cs.surface.withValues(alpha: tintAlpha * 0.65),
+                  cs.surface.withValues(alpha: tintAlpha * 0.30),
+                  cs.surface.withValues(alpha: 0.0),
+                ],
+                stops: const [0.0, 0.35, 0.65, 1.0],
+              ),
+              border: Border(
+                bottom: BorderSide(
+                  color: cs.outline.withValues(alpha: 0.05),
+                  width: 0.5,
+                ),
               ),
             ),
           ),

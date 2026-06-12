@@ -154,6 +154,7 @@ class _HomeScreenState extends ConsumerState<HomeScreen>
             );
           }
           return ListView.builder(
+            physics: const AlwaysScrollableScrollPhysics(),
             padding: EdgeInsets.only(
               top: MediaQuery.paddingOf(context).top + kToolbarHeight + 48,
             ),

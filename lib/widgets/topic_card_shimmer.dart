@@ -98,6 +98,7 @@ class TopicListShimmer extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return ListView.builder(
+      physics: const AlwaysScrollableScrollPhysics(),
       padding: const EdgeInsets.symmetric(vertical: 6),
       itemCount: count,
       itemBuilder: (context, index) => const TopicCardShimmer(),
