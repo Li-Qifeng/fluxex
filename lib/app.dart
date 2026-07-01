@@ -250,6 +250,16 @@ class ScaffoldWithNavBar extends ConsumerWidget {
     if (location.startsWith('/search')) currentIndex = 2;
     if (location.startsWith('/profile')) currentIndex = 3;
 
+    final isDark = Theme.of(context).brightness == Brightness.dark;
+    // 浅色模式：玻璃层底色更暗、更不透明，确保按钮可见
+    // 深色模式：玻璃层底色稍亮，保持玻璃质感
+    final glassColor = isDark
+        ? const Color.from(alpha: 0.18, red: 1, green: 1, blue: 1)
+        : const Color.from(alpha: 0.35, red: 0.95, green: 0.95, blue: 0.95);
+    final unselectedColor = isDark
+        ? const Color.from(alpha: 0.55, red: 1, green: 1, blue: 1)
+        : const Color.from(alpha: 0.65, red: 0.2, green: 0.2, blue: 0.2);
+
     return Scaffold(
       extendBody: true,
       body: ConstrainedContent(child: child),
@@ -277,19 +287,19 @@ class ScaffoldWithNavBar extends ConsumerWidget {
         maskingQuality: MaskingQuality.high,
         interactionBehavior: GlassInteractionBehavior.full,
         pressScale: 1.03,
-        settings: const LiquidGlassSettings(
+        settings: LiquidGlassSettings(
           thickness: 32,
-          blur: 4,
+          blur: 8,
           refractiveIndex: 1.59,
           chromaticAberration: 0.22,
           lightIntensity: 0.75,
           saturation: 0.8,
           ambientStrength: 0.8,
           lightAngle: 2.356,
-          glassColor: Color.from(alpha: 0.12, red: 1, green: 1, blue: 1),
+          glassColor: glassColor,
         ),
         indicatorSettings: const LiquidGlassSettings(
-          glassColor: Color.from(alpha: 0.18, red: 1, green: 1, blue: 1),
+          glassColor: Color.from(alpha: 0.25, red: 1, green: 1, blue: 1),
           saturation: 1.4,
           refractiveIndex: 1.25,
           thickness: 22,
@@ -299,7 +309,7 @@ class ScaffoldWithNavBar extends ConsumerWidget {
           lightAngle: 2.356,
         ),
         selectedIconColor: Colors.white,
-        unselectedIconColor: const Color.from(alpha: 0.5, red: 1, green: 1, blue: 1),
+        unselectedIconColor: unselectedColor,
         iconSize: 22,
         labelFontSize: 11,
         glowOpacity: 0.55,
