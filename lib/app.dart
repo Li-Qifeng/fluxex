@@ -214,11 +214,11 @@ class _V2exAppState extends ConsumerState<V2exApp> {
     return DynamicColorBuilder(
       builder: (dynamic lightDynamic, dynamic darkDynamic) {
         final fallbackLight = ColorScheme.fromSeed(
-          seedColor: const Color(0xFF446CB3),
+          seedColor: settings.accentColor,
           brightness: Brightness.light,
         );
         final fallbackDark = ColorScheme.fromSeed(
-          seedColor: const Color(0xFF446CB3),
+          seedColor: settings.accentColor,
           brightness: Brightness.dark,
         );
         return MaterialApp.router(
