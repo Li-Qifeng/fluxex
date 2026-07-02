@@ -1,12 +1,36 @@
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
-import 'package:share_plus/share_plus.dart';
 import 'image_viewer.dart';
+import '../utils/image_utils.dart';
 
 class ImageGallery extends StatelessWidget {
   final List<String> urls;
 
   const ImageGallery({super.key, required this.urls});
+
+  static Future<void> _saveImage(BuildContext context, String url) async {
+    final loading = ScaffoldMessenger.of(context).showSnackBar(
+      const SnackBar(
+        content: Row(
+          children: [
+            SizedBox(
+              width: 18, height: 18,
+              child: CircularProgressIndicator(strokeWidth: 2),
+            ),
+            SizedBox(width: 12),
+            Text('正在保存图片...'),
+          ],
+        ),
+        duration: Duration(seconds: 30),
+      ),
+    );
+    final ok = await saveImageToGallery(url);
+    loading.close();
+    if (!context.mounted) return;
+    ScaffoldMessenger.of(context).showSnackBar(
+      SnackBar(content: Text(ok ? '图片已保存到相册' : '保存失败，请检查相册权限')),
+    );
+  }
 
   void _showOptions(BuildContext context, String url) {
     showModalBottomSheet<void>(
@@ -39,9 +63,7 @@ class ImageGallery extends StatelessWidget {
               title: const Text('保存图片'),
               onTap: () {
                 Navigator.pop(context);
-                ScaffoldMessenger.of(context).showSnackBar(
-                  const SnackBar(content: Text('长按图片可保存到相册')),
-                );
+                _saveImage(context, url);
               },
             ),
             ListTile(
@@ -49,7 +71,7 @@ class ImageGallery extends StatelessWidget {
               title: const Text('分享图片'),
               onTap: () {
                 Navigator.pop(context);
-                Share.share(url);
+                shareImageFile(url);
               },
             ),
             ListTile(

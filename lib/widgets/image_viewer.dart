@@ -1,6 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
-import 'package:share_plus/share_plus.dart';
+import '../utils/image_utils.dart';
 
 /// Shows a full-screen image gallery viewer with gesture support:
 /// - Tap: toggle controls
@@ -89,8 +89,8 @@ class _ImageViewerPageState extends State<_ImageViewerPage> with SingleTickerPro
   }
 
   void _commitDrag([double? velocity]) {
-    final threshold = 120.0;
-    final velThreshold = 400.0;
+    const threshold = 120.0;
+    const velThreshold = 400.0;
     if (_dragOffset.abs() > threshold || (velocity?.abs() ?? 0) > velThreshold) {
       Navigator.of(context).pop();
     } else {
@@ -112,6 +112,31 @@ class _ImageViewerPageState extends State<_ImageViewerPage> with SingleTickerPro
       }
     });
     controller.forward();
+  }
+
+  Future<void> _saveImage(String url) async {
+    final loading = ScaffoldMessenger.of(context).showSnackBar(
+      const SnackBar(
+        content: Row(
+          children: [
+            SizedBox(
+              width: 18,
+              height: 18,
+              child: CircularProgressIndicator(strokeWidth: 2, color: Colors.white),
+            ),
+            SizedBox(width: 12),
+            Text('正在保存图片...'),
+          ],
+        ),
+        duration: Duration(seconds: 30),
+      ),
+    );
+    final ok = await saveImageToGallery(url);
+    loading.close();
+    if (!mounted) return;
+    ScaffoldMessenger.of(context).showSnackBar(
+      SnackBar(content: Text(ok ? '图片已保存到相册' : '保存失败，请检查相册权限')),
+    );
   }
 
   void _showOptions(String url) {
@@ -147,9 +172,7 @@ class _ImageViewerPageState extends State<_ImageViewerPage> with SingleTickerPro
               title: const Text('保存图片', style: TextStyle(color: Colors.white)),
               onTap: () {
                 Navigator.pop(ctx);
-                ScaffoldMessenger.of(context).showSnackBar(
-                  const SnackBar(content: Text('长按图片可保存到相册')),
-                );
+                _saveImage(url);
               },
             ),
             ListTile(
@@ -157,7 +180,7 @@ class _ImageViewerPageState extends State<_ImageViewerPage> with SingleTickerPro
               title: const Text('分享图片', style: TextStyle(color: Colors.white)),
               onTap: () {
                 Navigator.pop(ctx);
-                Share.share(url);
+                shareImageFile(url);
               },
             ),
             ListTile(

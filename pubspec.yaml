@@ -39,6 +39,8 @@ dependencies:
   shimmer: ^3.0.0
   flutter_secure_storage: ^9.2.2
   liquid_glass_widgets: ^0.15.4
+  image_gallery_saver: ^2.0.3
+  path_provider: ^2.1.6
 
 dev_dependencies:
   flutter_test:
