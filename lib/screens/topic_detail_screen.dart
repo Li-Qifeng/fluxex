@@ -39,8 +39,6 @@ class _TopicDetailScreenState extends ConsumerState<TopicDetailScreen> {
   int _currentFloor = 0;
   int _totalReplies = 0;
   int? _dragTargetFloor;
-  int? _dragStartFloor;
-  double _dragAccumulatedDx = 0;
   bool _isExpandedFloor = false;
   Timer? _saveTimer;
   bool _isSearching = false;
@@ -431,8 +429,6 @@ class _TopicDetailScreenState extends ConsumerState<TopicDetailScreen> {
     }
     setState(() {
       _dragTargetFloor = null;
-      _dragStartFloor = null;
-      _dragAccumulatedDx = 0;
     });
   }
 
@@ -1029,61 +1025,28 @@ class _TopicDetailScreenState extends ConsumerState<TopicDetailScreen> {
                       ),
                     ),
                   ),
-                  GestureDetector(
-                    onTap: () {
-                      setState(() => _isExpandedFloor = !_isExpandedFloor);
-                    },
+                  _FloorDragCapsule(
+                    totalReplies: _totalReplies,
+                    currentFloor: _currentFloor,
+                    dragTargetFloor: _dragTargetFloor,
+                    isExpanded: _isExpandedFloor,
+                    onTap: () =>
+                        setState(() => _isExpandedFloor = !_isExpandedFloor),
                     onLongPress: () {
                       HapticFeedback.heavyImpact();
                       _showFloorInputDialog();
                     },
-                    onHorizontalDragStart: (_) {
-                      if (_isExpandedFloor) {
-                        setState(() => _isExpandedFloor = false);
-                        return;
-                      }
-                      _dragStartFloor = _currentFloor;
-                      _dragAccumulatedDx = 0;
-                      setState(() => _dragTargetFloor = null);
+                    onDragUpdate: (targetFloor, expand) {
+                      setState(() {
+                        _dragTargetFloor = targetFloor;
+                        if (expand) _isExpandedFloor = true;
+                      });
+                      HapticFeedback.selectionClick();
                     },
-                    onHorizontalDragUpdate: (details) {
-                      if (_totalReplies <= 1 || _dragStartFloor == null) return;
-                      _dragAccumulatedDx += details.delta.dx;
-                      const sensitivity = 28.0;
-                      final deltaFloor = (-_dragAccumulatedDx / sensitivity).round();
-                      final target = (_dragStartFloor! + deltaFloor).clamp(1, _totalReplies);
-                      if (target != _dragTargetFloor) {
-                        setState(() => _dragTargetFloor = target);
-                        HapticFeedback.lightImpact();
-                      }
+                    onDragEnd: (targetFloor) {
+                      _dragTargetFloor = targetFloor;
+                      _commitDragJump();
                     },
-                    onHorizontalDragEnd: (_) => _commitDragJump(),
-                    onHorizontalDragCancel: _commitDragJump,
-                    onVerticalDragUpdate: (details) {
-                      if (_totalReplies <= 1) return;
-                      const sensitivity = 8.0;
-                      final deltaFloor = (-details.delta.dy / sensitivity).round();
-                      final target = (_currentFloor + deltaFloor).clamp(1, _totalReplies);
-                      if (target != _dragTargetFloor) {
-                        setState(() {
-                          _dragTargetFloor = target;
-                          _isExpandedFloor = true;
-                        });
-                        HapticFeedback.selectionClick();
-                      }
-                    },
-                    onVerticalDragEnd: (details) => _commitDragJump(),
-                    child: AnimatedContainer(
-                      duration: const Duration(milliseconds: 200),
-                      curve: Curves.easeInOut,
-                      width: _isExpandedFloor ? 180 : null,
-                      child: GlassContainer(
-                        shape: const LiquidRoundedSuperellipse(borderRadius: 18),
-                        child: _isExpandedFloor
-                            ? _buildExpandedFloorSlider()
-                            : _buildCollapsedFloorCapsule(),
-                      ),
-                    ),
                   ),
                 ],
               ),
@@ -1120,14 +1083,122 @@ class _FloorStepButton extends StatelessWidget {
   }
 }
 
-// ── Floor capsule helpers ──────────────────────────────────────────
+// ── Floor capsule replaced by _FloorDragCapsule ──
 
-extension on _TopicDetailScreenState {
-  Widget _buildCollapsedFloorCapsule() {
+// ── Floor drag capsule widget ──────────────────────────────────────
+// 完全自包含的楼层选择控件，使用绝对坐标跟踪手指，跟手无延迟。
+// 碰撞检测：仅垂直拖拽，无水平-垂直方向竞争。
+// 灵敏度：根据控件高度动态计算 px-per-floor，收起~60px/展开~180px 均可覆盖全部楼层。
+
+class _FloorDragCapsule extends StatefulWidget {
+  final int totalReplies;
+  final int currentFloor;
+  final int? dragTargetFloor;
+  final bool isExpanded;
+  final VoidCallback onTap;
+  final VoidCallback onLongPress;
+  final void Function(int targetFloor, bool expand) onDragUpdate;
+  final void Function(int targetFloor) onDragEnd;
+
+  const _FloorDragCapsule({
+    required this.totalReplies,
+    required this.currentFloor,
+    required this.dragTargetFloor,
+    required this.isExpanded,
+    required this.onTap,
+    required this.onLongPress,
+    required this.onDragUpdate,
+    required this.onDragEnd,
+  });
+
+  @override
+  State<_FloorDragCapsule> createState() => _FloorDragCapsuleState();
+}
+
+class _FloorDragCapsuleState extends State<_FloorDragCapsule> {
+  final GlobalKey _widgetKey = GlobalKey();
+  int _startFloor = 0;
+  double _startPositionY = 0;
+  int _lastReportedFloor = 0;
+
+  @override
+  void initState() {
+    super.initState();
+    _lastReportedFloor = widget.dragTargetFloor ?? widget.currentFloor;
+  }
+
+  @override
+  void didUpdateWidget(_FloorDragCapsule old) {
+    super.didUpdateWidget(old);
+    _lastReportedFloor = widget.dragTargetFloor ?? widget.currentFloor;
+  }
+
+  // 控件高度 / 总楼层数 = 拖动覆盖全部楼层所需 px
+  double _getSensitivity() {
+    final renderBox =
+        _widgetKey.currentContext?.findRenderObject() as RenderBox?;
+    if (renderBox == null) return 12.0;
+    final height = renderBox.size.height;
+    if (widget.totalReplies <= 1 || height <= 0) return 12.0;
+    return height / widget.totalReplies;
+  }
+
+  int _floorFromDelta(double dy) {
+    final deltaFloor = -(dy / _getSensitivity());
+    return (_startFloor + deltaFloor.round()).clamp(1, widget.totalReplies);
+  }
+
+  @override
+  Widget build(BuildContext context) {
     final cs = Theme.of(context).colorScheme;
+    final displayFloor = widget.dragTargetFloor ?? widget.currentFloor;
+
+    return GestureDetector(
+      key: _widgetKey,
+      // 仅保留垂直拖拽，消除水平/垂直方向竞争
+      onTap: widget.onTap,
+      onLongPress: widget.onLongPress,
+      onVerticalDragStart: (details) {
+        _startFloor = displayFloor;
+        _startPositionY = details.globalPosition.dy;
+      },
+      onVerticalDragUpdate: (details) {
+        if (widget.totalReplies <= 1) return;
+        final dy = details.globalPosition.dy - _startPositionY;
+        final target = _floorFromDelta(dy);
+        if (target != _lastReportedFloor) {
+          _lastReportedFloor = target;
+          widget.onDragUpdate(target, true);
+        }
+      },
+      onVerticalDragEnd: (_) {
+        widget.onDragEnd(widget.dragTargetFloor ?? widget.currentFloor);
+      },
+      onVerticalDragCancel: () {
+        widget.onDragEnd(widget.currentFloor);
+      },
+      child: AnimatedContainer(
+        duration: const Duration(milliseconds: 200),
+        curve: Curves.easeInOut,
+        width: widget.isExpanded ? 180 : null,
+        child: GlassContainer(
+          shape: const LiquidRoundedSuperellipse(borderRadius: 18),
+          child: widget.isExpanded
+              ? _buildExpanded(cs, displayFloor)
+              : _buildCollapsed(cs, displayFloor),
+        ),
+      ),
+    );
+  }
+
+  Widget _buildCollapsed(ColorScheme cs, int displayFloor) {
+    final progress = widget.totalReplies > 0
+        ? (displayFloor / widget.totalReplies).clamp(0.0, 1.0)
+        : 0.0;
     return Column(
       mainAxisSize: MainAxisSize.min,
       children: [
+        // 进度条
         Container(
           width: 100,
           height: 3,
@@ -1138,12 +1209,10 @@ extension on _TopicDetailScreenState {
           ),
           child: FractionallySizedBox(
             alignment: Alignment.centerLeft,
-            widthFactor: _totalReplies > 0
-                ? ((_dragTargetFloor ?? _currentFloor) / _totalReplies).clamp(0.0, 1.0)
-                : 0.0,
+            widthFactor: progress,
             child: Container(
               decoration: BoxDecoration(
-                color: _dragTargetFloor != null
+                color: widget.dragTargetFloor != null
                     ? cs.primary
                     : cs.onPrimaryContainer.withValues(alpha: 0.6),
                 borderRadius: BorderRadius.circular(2),
@@ -1154,11 +1223,11 @@ extension on _TopicDetailScreenState {
         Padding(
           padding: const EdgeInsets.only(bottom: 10, left: 12, right: 12),
           child: Text(
-            '${_dragTargetFloor ?? _currentFloor} / $_totalReplies 楼',
+            '$displayFloor / ${widget.totalReplies} 楼',
             style: TextStyle(
               fontSize: 12,
               fontWeight: FontWeight.w600,
-              color: _dragTargetFloor != null
+              color: widget.dragTargetFloor != null
                   ? cs.primary
                   : cs.onPrimaryContainer,
             ),
@@ -1168,60 +1237,46 @@ extension on _TopicDetailScreenState {
     );
   }
 
-  Widget _buildExpandedFloorSlider() {
-    final cs = Theme.of(context).colorScheme;
-    final current = _dragTargetFloor ?? _currentFloor;
+  Widget _buildExpanded(ColorScheme cs, int displayFloor) {
+    final progress = widget.totalReplies > 0
+        ? (displayFloor / widget.totalReplies).clamp(0.0, 1.0)
+        : 0.0;
     return Padding(
       padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 10),
       child: Column(
         mainAxisSize: MainAxisSize.min,
         children: [
           Text(
-            '$current 楼',
+            '$displayFloor 楼',
             style: TextStyle(
               fontSize: 18,
               fontWeight: FontWeight.w700,
               color: cs.primary,
             ),
           ),
-          const SizedBox(height: 4),
-          SizedBox(
-            width: 140,
-            child: SliderTheme(
-              data: SliderThemeData(
-                trackHeight: 4,
-                thumbShape: const RoundSliderThumbShape(enabledThumbRadius: 6),
-                overlayShape: const RoundSliderOverlayShape(overlayRadius: 12),
-                activeTrackColor: cs.primary,
-                inactiveTrackColor: cs.outline.withValues(alpha: 0.2),
-                thumbColor: cs.primary,
-                valueIndicatorColor: cs.primary,
-                valueIndicatorTextStyle: TextStyle(
-                  color: cs.onPrimary,
-                  fontSize: 11,
-                  fontWeight: FontWeight.w600,
+          const SizedBox(height: 8),
+          // 自定义进度条（代替 Flutter Slider，消除触摸竞争）
+          Container(
+            width: 120,
+            height: 4,
+            decoration: BoxDecoration(
+              color: cs.outline.withValues(alpha: 0.2),
+              borderRadius: BorderRadius.circular(2),
+            ),
+            child: FractionallySizedBox(
+              alignment: Alignment.centerLeft,
+              widthFactor: progress,
+              child: Container(
+                decoration: BoxDecoration(
+                  color: cs.primary,
+                  borderRadius: BorderRadius.circular(2),
                 ),
-              ),
-              child: Slider(
-                value: current.toDouble(),
-                min: 1,
-                max: _totalReplies.toDouble(),
-                divisions: _totalReplies - 1,
-                label: '$current / $_totalReplies 楼',
-                onChanged: (value) {
-                  setState(() => _dragTargetFloor = value.round());
-                  HapticFeedback.selectionClick();
-                },
-                onChangeEnd: (value) {
-                  _dragTargetFloor = value.round();
-                  _commitDragJump();
-                },
               ),
             ),
           ),
-          const SizedBox(height: 4),
+          const SizedBox(height: 6),
           Text(
-            '$_totalReplies 楼',
+            '${widget.totalReplies} 楼',
             style: TextStyle(
               fontSize: 11,
               color: cs.onSurfaceVariant,
