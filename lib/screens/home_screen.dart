@@ -153,52 +153,75 @@ class _HomeScreenState extends ConsumerState<HomeScreen>
               EmptyState(onRetry: onRefresh),
             );
           }
-          return ListView.builder(
-            physics: const AlwaysScrollableScrollPhysics(),
-            padding: EdgeInsets.only(
-              top: MediaQuery.paddingOf(context).top + kToolbarHeight + 48,
-            ),
-            itemCount: filteredTopics.length + (result.fromCache ? 1 : 0) + 1,
-            itemBuilder: (context, index) {
-              if (result.fromCache && index == 0) {
-                return Container(
-                  margin: const EdgeInsets.all(12),
-                  padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 10),
-                  decoration: BoxDecoration(
-                    color: Theme.of(context).colorScheme.secondaryContainer.withValues(alpha: 0.6),
-                    borderRadius: BorderRadius.circular(12),
+          return LayoutBuilder(
+            builder: (context, constraints) {
+              final isWide = constraints.maxWidth > 800;
+              if (isWide) {
+                return GridView.builder(
+                  physics: const AlwaysScrollableScrollPhysics(),
+                  padding: EdgeInsets.only(
+                    top: MediaQuery.paddingOf(context).top + kToolbarHeight + 48,
+                    left: 8,
+                    right: 8,
                   ),
-                  child: Row(
-                    children: [
-                      Icon(Icons.offline_bolt,
-                          color: Theme.of(context).colorScheme.onSecondaryContainer),
-                      const SizedBox(width: 8),
-                      Expanded(
-                        child: Text(
-                          '当前处于离线状态，展示缓存内容',
-                          style: TextStyle(
-                            fontSize: 13,
-                            color: Theme.of(context).colorScheme.onSecondaryContainer,
+                  gridDelegate: const SliverGridDelegateWithFixedCrossAxisCount(
+                    crossAxisCount: 2,
+                    childAspectRatio: 1.6,
+                    crossAxisSpacing: 4,
+                    mainAxisSpacing: 4,
+                  ),
+                  itemCount: filteredTopics.length,
+                  itemBuilder: (context, index) => TopicCard(topic: filteredTopics[index]),
+                );
+              }
+              return ListView.builder(
+                physics: const AlwaysScrollableScrollPhysics(),
+                padding: EdgeInsets.only(
+                  top: MediaQuery.paddingOf(context).top + kToolbarHeight + 48,
+                ),
+                itemCount: filteredTopics.length + (result.fromCache ? 1 : 0) + 1,
+                itemBuilder: (context, index) {
+                  if (result.fromCache && index == 0) {
+                    return Container(
+                      margin: const EdgeInsets.all(12),
+                      padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 10),
+                      decoration: BoxDecoration(
+                        color: Theme.of(context).colorScheme.secondaryContainer.withValues(alpha: 0.6),
+                        borderRadius: BorderRadius.circular(12),
+                      ),
+                      child: Row(
+                        children: [
+                          Icon(Icons.offline_bolt,
+                              color: Theme.of(context).colorScheme.onSecondaryContainer),
+                          const SizedBox(width: 8),
+                          Expanded(
+                            child: Text(
+                              '当前处于离线状态，展示缓存内容',
+                              style: TextStyle(
+                                fontSize: 13,
+                                color: Theme.of(context).colorScheme.onSecondaryContainer,
+                              ),
+                            ),
                           ),
+                        ],
+                      ),
+                    );
+                  }
+                  final topicIndex = result.fromCache ? index - 1 : index;
+                  if (topicIndex == filteredTopics.length) {
+                    return const Padding(
+                      padding: EdgeInsets.symmetric(vertical: 24),
+                      child: Center(
+                        child: Text(
+                          '—— 已显示全部内容 ——',
+                          style: TextStyle(color: Colors.grey, fontSize: 12),
                         ),
                       ),
-                    ],
-                  ),
-                );
-              }
-              final topicIndex = result.fromCache ? index - 1 : index;
-              if (topicIndex == filteredTopics.length) {
-                return const Padding(
-                  padding: EdgeInsets.symmetric(vertical: 24),
-                  child: Center(
-                    child: Text(
-                      '—— 已显示全部内容 ——',
-                      style: TextStyle(color: Colors.grey, fontSize: 12),
-                    ),
-                  ),
-                );
-              }
-              return TopicCard(topic: filteredTopics[topicIndex]);
+                    );
+                  }
+                  return TopicCard(topic: filteredTopics[topicIndex]);
+                },
+              );
             },
           );
         },
