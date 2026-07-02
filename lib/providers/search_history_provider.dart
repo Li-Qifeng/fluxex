@@ -28,6 +28,13 @@ class SearchHistoryNotifier extends StateNotifier<List<String>> {
     final prefs = await SharedPreferences.getInstance();
     await prefs.remove(_searchHistoryKey);
   }
+
+  Future<void> remove(String query) async {
+    final next = state.where((e) => e != query).toList();
+    state = next;
+    final prefs = await SharedPreferences.getInstance();
+    await prefs.setStringList(_searchHistoryKey, next);
+  }
 }
 
 final searchHistoryProvider = StateNotifierProvider<SearchHistoryNotifier, List<String>>(

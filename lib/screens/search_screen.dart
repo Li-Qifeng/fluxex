@@ -88,13 +88,17 @@ class _SearchScreenState extends ConsumerState<SearchScreen> {
                                   ),
                                   const SizedBox(width: 8),
                                   Expanded(
-                                    child: Text(
-                                      r.member,
-                                      style: TextStyle(
-                                        fontSize: 12,
-                                        color: cs.onSurfaceVariant,
+                                    child: GestureDetector(
+                                      onTap: () => context.push('/member/${r.member}'),
+                                      child: Text(
+                                        r.member,
+                                        style: TextStyle(
+                                          fontSize: 12,
+                                          color: cs.primary,
+                                          fontWeight: FontWeight.w500,
+                                        ),
+                                        overflow: TextOverflow.ellipsis,
                                       ),
-                                      overflow: TextOverflow.ellipsis,
                                     ),
                                   ),
                                   Text(
@@ -165,13 +169,15 @@ class _SearchScreenState extends ConsumerState<SearchScreen> {
           Wrap(
             spacing: 8,
             runSpacing: 8,
-            children: history.map((q) => ActionChip(
+            children: history.map((q) => InputChip(
               label: Text(q),
               visualDensity: VisualDensity.compact,
               onPressed: () {
                 _controller.text = q;
                 _doSearch(q);
               },
+              onDeleted: () => ref.read(searchHistoryProvider.notifier).remove(q),
+              deleteIcon: Icon(Icons.close, size: 14, color: cs.outline),
             )).toList(),
           ),
           const SizedBox(height: 20),
