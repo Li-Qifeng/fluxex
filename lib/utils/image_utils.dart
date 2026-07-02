@@ -1,6 +1,6 @@
 import 'dart:io';
 import 'package:dio/dio.dart';
-import 'package:image_gallery_saver/image_gallery_saver.dart';
+import 'package:gal/gal.dart';
 import 'package:path_provider/path_provider.dart';
 import 'package:share_plus/share_plus.dart';
 
@@ -24,12 +24,14 @@ Future<bool> saveImageToGallery(String url) async {
     if (path == null) return false;
     final file = File(path);
     if (!await file.exists()) return false;
-    final result = await ImageGallerySaver.saveFile(path);
+    // 请求权限并保存
+    if (!await Gal.requestAccess()) return false;
+    await Gal.putImage(path);
     // 清理临时文件
     try {
       await file.delete();
     } catch (_) {}
-    return result['isSuccess'] == true;
+    return true;
   } catch (_) {
     return false;
   }
