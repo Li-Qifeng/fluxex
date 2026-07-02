@@ -282,6 +282,24 @@ class _ProfileScreenState extends ConsumerState<ProfileScreen> {
             onTap: () => context.push('/followed-nodes'),
           ),
           ListTile(
+            leading: const Icon(Icons.bookmark_border),
+            title: const Text('稍后阅读'),
+            trailing: const Icon(Icons.chevron_right),
+            onTap: () => context.push('/read-later'),
+          ),
+          ListTile(
+            leading: const Icon(Icons.people_outline),
+            title: const Text('已关注成员'),
+            trailing: const Icon(Icons.chevron_right),
+            onTap: () => context.push('/followed-members'),
+          ),
+          ListTile(
+            leading: const Icon(Icons.description_outlined),
+            title: const Text('草稿箱'),
+            trailing: const Icon(Icons.chevron_right),
+            onTap: () => context.push('/drafts'),
+          ),
+          ListTile(
             leading: unreadCount > 0
                 ? Badge(
                     label: Text(unreadCount > 99 ? '99+' : '$unreadCount'),

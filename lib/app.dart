@@ -21,6 +21,9 @@ import 'screens/topic_detail_screen.dart';
 import 'screens/create_topic_screen.dart';
 import 'screens/followed_nodes_screen.dart';
 import 'screens/settings_screen.dart';
+import 'screens/read_later_screen.dart';
+import 'screens/followed_members_screen.dart';
+import 'screens/drafts_screen.dart';
 import 'widgets/constrained_content.dart';
 
 final _rootNavigatorKey = GlobalKey<NavigatorState>();
@@ -113,6 +116,21 @@ final appRouter = GoRouter(
       parentNavigatorKey: _rootNavigatorKey,
       path: '/settings',
       pageBuilder: (context, state) => CupertinoPage(child: const SettingsScreen(), key: state.pageKey),
+    ),
+    GoRoute(
+      parentNavigatorKey: _rootNavigatorKey,
+      path: '/read-later',
+      pageBuilder: (context, state) => CupertinoPage(child: const ReadLaterScreen(), key: state.pageKey),
+    ),
+    GoRoute(
+      parentNavigatorKey: _rootNavigatorKey,
+      path: '/followed-members',
+      pageBuilder: (context, state) => CupertinoPage(child: const FollowedMembersScreen(), key: state.pageKey),
+    ),
+    GoRoute(
+      parentNavigatorKey: _rootNavigatorKey,
+      path: '/drafts',
+      pageBuilder: (context, state) => CupertinoPage(child: const DraftsScreen(), key: state.pageKey),
     ),
   ],
 );
