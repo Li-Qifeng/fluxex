@@ -113,23 +113,47 @@ class ImageGallery extends StatelessWidget {
           children: urls.asMap().entries.map((entry) {
             final index = entry.key;
             final url = entry.value;
-            return GestureDetector(
-              onTap: () => showImageViewer(context, urls, initialIndex: index),
-              onLongPress: () => _showOptions(context, url),
-              child: ClipRRect(
-                borderRadius: BorderRadius.circular(8),
-                child: Image.network(
-                  url,
-                  width: 100,
-                  height: 100,
-                  fit: BoxFit.cover,
-                  errorBuilder: (_, __, ___) => Container(
-                    width: 100,
-                    height: 100,
-                    color: Colors.grey.shade300,
-                    child: const Icon(Icons.broken_image),
+            return SizedBox(
+              width: 100,
+              height: 100,
+              child: Stack(
+                children: [
+                  GestureDetector(
+                    onTap: () => showImageViewer(context, urls, initialIndex: index),
+                    child: ClipRRect(
+                      borderRadius: BorderRadius.circular(8),
+                      child: Image.network(
+                        url,
+                        width: 100,
+                        height: 100,
+                        fit: BoxFit.cover,
+                        errorBuilder: (_, __, ___) => Container(
+                          width: 100,
+                          height: 100,
+                          color: Colors.grey.shade300,
+                          child: const Icon(Icons.broken_image),
+                        ),
+                      ),
+                    ),
                   ),
-                ),
+                  // 右上角操作按钮
+                  Positioned(
+                    right: 2,
+                    top: 2,
+                    child: GestureDetector(
+                      onTap: () => _showOptions(context, url),
+                      child: Container(
+                        width: 24,
+                        height: 24,
+                        decoration: BoxDecoration(
+                          color: Colors.black.withValues(alpha: 0.4),
+                          borderRadius: BorderRadius.circular(12),
+                        ),
+                        child: const Icon(Icons.more_horiz, size: 14, color: Colors.white),
+                      ),
+                    ),
+                  ),
+                ],
               ),
             );
           }).toList(),

@@ -1118,8 +1118,9 @@ class _FloorDragCapsule extends StatefulWidget {
 class _FloorDragCapsuleState extends State<_FloorDragCapsule> {
   final GlobalKey _widgetKey = GlobalKey();
   int _startFloor = 0;
-  double _startPositionY = 0;
+  double _dragStartY = 0;
   int _lastReportedFloor = 0;
+  bool _isDragging = false;
 
   @override
   void initState() {
@@ -1153,31 +1154,43 @@ class _FloorDragCapsuleState extends State<_FloorDragCapsule> {
     final cs = Theme.of(context).colorScheme;
     final displayFloor = widget.dragTargetFloor ?? widget.currentFloor;
 
-    return GestureDetector(
+    // 使用 Listener 监听原始指针事件（无手势竞技场延迟）
+    // 内部 GestureDetector 只处理 tap/longpress，不参与拖拽竞争
+    return Listener(
       key: _widgetKey,
-      // 仅保留垂直拖拽，消除水平/垂直方向竞争
-      onTap: widget.onTap,
-      onLongPress: widget.onLongPress,
-      onVerticalDragStart: (details) {
+      onPointerDown: (event) {
+        _isDragging = false;
         _startFloor = displayFloor;
-        _startPositionY = details.globalPosition.dy;
+        _dragStartY = event.position.dy;
       },
-      onVerticalDragUpdate: (details) {
+      onPointerMove: (event) {
         if (widget.totalReplies <= 1) return;
-        final dy = details.globalPosition.dy - _startPositionY;
+        final dy = event.position.dy - _dragStartY;
+        // 移动超过 4px 才判定为拖拽（防误触）
+        if (!_isDragging && dy.abs() < 4) return;
+        _isDragging = true;
         final target = _floorFromDelta(dy);
         if (target != _lastReportedFloor) {
           _lastReportedFloor = target;
           widget.onDragUpdate(target, true);
         }
       },
-      onVerticalDragEnd: (_) {
-        widget.onDragEnd(widget.dragTargetFloor ?? widget.currentFloor);
+      onPointerUp: (event) {
+        if (_isDragging) {
+          widget.onDragEnd(widget.dragTargetFloor ?? widget.currentFloor);
+        }
+        _isDragging = false;
       },
-      onVerticalDragCancel: () {
-        widget.onDragEnd(widget.currentFloor);
+      onPointerCancel: (event) {
+        if (_isDragging) {
+          widget.onDragEnd(widget.currentFloor);
+        }
+        _isDragging = false;
       },
-      child: AnimatedContainer(
+      child: GestureDetector(
+        onTap: widget.onTap,
+        onLongPress: widget.onLongPress,
+        child: AnimatedContainer(
         duration: const Duration(milliseconds: 200),
         curve: Curves.easeInOut,
         width: widget.isExpanded ? 180 : null,
@@ -1187,6 +1200,7 @@ class _FloorDragCapsuleState extends State<_FloorDragCapsule> {
               ? _buildExpanded(cs, displayFloor)
               : _buildCollapsed(cs, displayFloor),
         ),
+      ),
       ),
     );
   }
