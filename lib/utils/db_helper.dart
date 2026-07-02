@@ -49,6 +49,15 @@ class DbHelper {
             )
           ''');
         }
+        if (oldVersion < 5) {
+          await db.execute('''
+            CREATE TABLE read_later (
+              topic_id INTEGER PRIMARY KEY,
+              title TEXT NOT NULL,
+              added_at INTEGER NOT NULL
+            )
+          ''');
+        }
       },
     );
   }
@@ -94,6 +103,13 @@ class DbHelper {
         content TEXT NOT NULL,
         extra TEXT,
         saved_at INTEGER NOT NULL
+      )
+    ''');
+    await db.execute('''
+      CREATE TABLE read_later (
+        topic_id INTEGER PRIMARY KEY,
+        title TEXT NOT NULL,
+        added_at INTEGER NOT NULL
       )
     ''');
   }
@@ -256,5 +272,35 @@ class DbHelper {
       limit: 1,
     );
     return rows.isNotEmpty;
+  }
+
+  // ========== Read Later ==========
+  static Future<void> addReadLater(int topicId, String title) async {
+    final db = await database;
+    await db.insert('read_later', {
+      'topic_id': topicId,
+      'title': title,
+      'added_at': DateTime.now().millisecondsSinceEpoch,
+    }, conflictAlgorithm: ConflictAlgorithm.replace);
+  }
+
+  static Future<void> removeReadLater(int topicId) async {
+    final db = await database;
+    await db.delete('read_later', where: 'topic_id = ?', whereArgs: [topicId]);
+  }
+
+  static Future<bool> isReadLater(int topicId) async {
+    final db = await database;
+    final rows = await db.query('read_later',
+      where: 'topic_id = ?',
+      whereArgs: [topicId],
+      limit: 1,
+    );
+    return rows.isNotEmpty;
+  }
+
+  static Future<List<Map<String, dynamic>>> getReadLater() async {
+    final db = await database;
+    return db.query('read_later', orderBy: 'added_at DESC');
   }
 }

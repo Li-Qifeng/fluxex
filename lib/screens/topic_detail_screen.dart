@@ -41,10 +41,12 @@ class _TopicDetailScreenState extends ConsumerState<TopicDetailScreen> {
   int? _dragTargetFloor;
   int? _dragStartFloor;
   double _dragAccumulatedDx = 0;
+  bool _isExpandedFloor = false;
   Timer? _saveTimer;
   bool _isSearching = false;
   bool _onlyAuthor = false;
   String _searchQuery = '';
+  double _scrollProgress = 0.0;
 
   // ── Export / Share helpers ──────────────────────────────────────
 
@@ -338,6 +340,12 @@ class _TopicDetailScreenState extends ConsumerState<TopicDetailScreen> {
 
   void _onScroll() {
     if (!mounted || _totalReplies == 0 || _isSearching) return;
+
+    // 更新阅读进度
+    final pos = _scrollController.position;
+    if (pos.maxScrollExtent > 0) {
+      _scrollProgress = (pos.pixels / pos.maxScrollExtent).clamp(0.0, 1.0);
+    }
 
     final viewportCenter = MediaQuery.of(context).size.height / 2;
 
@@ -729,6 +737,21 @@ class _TopicDetailScreenState extends ConsumerState<TopicDetailScreen> {
                   case 'export_html':
                     _exportHtml();
                     break;
+                  case 'read_later':
+                    final topic = await ref.read(topicDetailProvider(widget.topicId).future);
+                    final isLater = await DbHelper.isReadLater(widget.topicId);
+                    if (isLater) {
+                      await DbHelper.removeReadLater(widget.topicId);
+                      if (context.mounted) {
+                        AppToast.info(context, '已移除稍后阅读');
+                      }
+                    } else {
+                      await DbHelper.addReadLater(widget.topicId, topic.title);
+                      if (context.mounted) {
+                        AppToast.success(context, '已加入稍后阅读');
+                      }
+                    }
+                    break;
                 }
               },
               itemBuilder: (_) => [
@@ -787,6 +810,16 @@ class _TopicDetailScreenState extends ConsumerState<TopicDetailScreen> {
                     contentPadding: EdgeInsets.zero,
                   ),
                 ),
+                const PopupMenuDivider(),
+                const PopupMenuItem(
+                  value: 'read_later',
+                  child: ListTile(
+                    leading: Icon(Icons.bookmark_border_outlined),
+                    title: Text('稍后阅读'),
+                    dense: true,
+                    contentPadding: EdgeInsets.zero,
+                  ),
+                ),
               ],
             ),
           ] else if (_searchController.text.isNotEmpty)
@@ -818,6 +851,29 @@ class _TopicDetailScreenState extends ConsumerState<TopicDetailScreen> {
                     height: MediaQuery.paddingOf(context).top + kToolbarHeight,
                   ),
                 ),
+                // 阅读进度条
+                if (_totalReplies > 0)
+                  SliverToBoxAdapter(
+                    child: Padding(
+                      padding: EdgeInsets.only(
+                        left: 16,
+                        right: 16,
+                        top: 4,
+                        bottom: 0,
+                      ),
+                      child: ClipRRect(
+                        borderRadius: BorderRadius.circular(2),
+                        child: LinearProgressIndicator(
+                          value: _scrollProgress,
+                          minHeight: 3,
+                          backgroundColor: Theme.of(context).colorScheme.surfaceContainerHighest,
+                          valueColor: AlwaysStoppedAnimation<Color>(
+                            Theme.of(context).colorScheme.primary.withValues(alpha: 0.7),
+                          ),
+                        ),
+                      ),
+                    ),
+                  ),
                 SliverToBoxAdapter(
                   child: TopicHeader(topic: topic),
                 ),
@@ -975,11 +1031,17 @@ class _TopicDetailScreenState extends ConsumerState<TopicDetailScreen> {
                   ),
                   GestureDetector(
                     onTap: () {
-                      setState(() => _dragTargetFloor = null);
-                      _showFloorPicker();
+                      setState(() => _isExpandedFloor = !_isExpandedFloor);
                     },
-                    onLongPress: _showFloorInputDialog,
+                    onLongPress: () {
+                      HapticFeedback.heavyImpact();
+                      _showFloorInputDialog();
+                    },
                     onHorizontalDragStart: (_) {
+                      if (_isExpandedFloor) {
+                        setState(() => _isExpandedFloor = false);
+                        return;
+                      }
                       _dragStartFloor = _currentFloor;
                       _dragAccumulatedDx = 0;
                       setState(() => _dragTargetFloor = null);
@@ -997,53 +1059,29 @@ class _TopicDetailScreenState extends ConsumerState<TopicDetailScreen> {
                     },
                     onHorizontalDragEnd: (_) => _commitDragJump(),
                     onHorizontalDragCancel: _commitDragJump,
-                    child: AnimatedScale(
-                      scale: _dragTargetFloor != null ? 1.05 : 1.0,
-                      duration: const Duration(milliseconds: 150),
-                      curve: Curves.easeOutBack,
+                    onVerticalDragUpdate: (details) {
+                      if (_totalReplies <= 1) return;
+                      const sensitivity = 8.0;
+                      final deltaFloor = (-details.delta.dy / sensitivity).round();
+                      final target = (_currentFloor + deltaFloor).clamp(1, _totalReplies);
+                      if (target != _dragTargetFloor) {
+                        setState(() {
+                          _dragTargetFloor = target;
+                          _isExpandedFloor = true;
+                        });
+                        HapticFeedback.selectionClick();
+                      }
+                    },
+                    onVerticalDragEnd: (details) => _commitDragJump(),
+                    child: AnimatedContainer(
+                      duration: const Duration(milliseconds: 200),
+                      curve: Curves.easeInOut,
+                      width: _isExpandedFloor ? 180 : null,
                       child: GlassContainer(
                         shape: const LiquidRoundedSuperellipse(borderRadius: 18),
-                        child: Column(
-                          mainAxisSize: MainAxisSize.min,
-                          children: [
-                            Container(
-                              width: 100,
-                              height: 3,
-                              margin: const EdgeInsets.fromLTRB(12, 10, 12, 6),
-                              decoration: BoxDecoration(
-                                color: Theme.of(context).colorScheme.outline.withValues(alpha: 0.15),
-                                borderRadius: BorderRadius.circular(2),
-                              ),
-                              child: FractionallySizedBox(
-                                alignment: Alignment.centerLeft,
-                                widthFactor: _totalReplies > 0
-                                    ? ((_dragTargetFloor ?? _currentFloor) / _totalReplies).clamp(0.0, 1.0)
-                                    : 0.0,
-                                child: Container(
-                                  decoration: BoxDecoration(
-                                    color: _dragTargetFloor != null
-                                        ? Theme.of(context).colorScheme.primary
-                                        : Theme.of(context).colorScheme.onPrimaryContainer.withValues(alpha: 0.6),
-                                    borderRadius: BorderRadius.circular(2),
-                                  ),
-                                ),
-                              ),
-                            ),
-                            Padding(
-                              padding: const EdgeInsets.only(bottom: 10, left: 12, right: 12),
-                              child: Text(
-                                '${_dragTargetFloor ?? _currentFloor} / $_totalReplies 楼',
-                                style: TextStyle(
-                                  fontSize: 12,
-                                  fontWeight: FontWeight.w600,
-                                  color: _dragTargetFloor != null
-                                      ? Theme.of(context).colorScheme.primary
-                                      : Theme.of(context).colorScheme.onPrimaryContainer,
-                                ),
-                              ),
-                            ),
-                          ],
-                        ),
+                        child: _isExpandedFloor
+                            ? _buildExpandedFloorSlider()
+                            : _buildCollapsedFloorCapsule(),
                       ),
                     ),
                   ),
@@ -1077,6 +1115,119 @@ class _FloorStepButton extends StatelessWidget {
           alignment: Alignment.center,
           child: Icon(icon, size: 20, color: cs.onSurface),
         ),
+      ),
+    );
+  }
+}
+
+// ── Floor capsule helpers ──────────────────────────────────────────
+
+extension on _TopicDetailScreenState {
+  Widget _buildCollapsedFloorCapsule() {
+    final cs = Theme.of(context).colorScheme;
+    return Column(
+      mainAxisSize: MainAxisSize.min,
+      children: [
+        Container(
+          width: 100,
+          height: 3,
+          margin: const EdgeInsets.fromLTRB(12, 10, 12, 6),
+          decoration: BoxDecoration(
+            color: cs.outline.withValues(alpha: 0.15),
+            borderRadius: BorderRadius.circular(2),
+          ),
+          child: FractionallySizedBox(
+            alignment: Alignment.centerLeft,
+            widthFactor: _totalReplies > 0
+                ? ((_dragTargetFloor ?? _currentFloor) / _totalReplies).clamp(0.0, 1.0)
+                : 0.0,
+            child: Container(
+              decoration: BoxDecoration(
+                color: _dragTargetFloor != null
+                    ? cs.primary
+                    : cs.onPrimaryContainer.withValues(alpha: 0.6),
+                borderRadius: BorderRadius.circular(2),
+              ),
+            ),
+          ),
+        ),
+        Padding(
+          padding: const EdgeInsets.only(bottom: 10, left: 12, right: 12),
+          child: Text(
+            '${_dragTargetFloor ?? _currentFloor} / $_totalReplies 楼',
+            style: TextStyle(
+              fontSize: 12,
+              fontWeight: FontWeight.w600,
+              color: _dragTargetFloor != null
+                  ? cs.primary
+                  : cs.onPrimaryContainer,
+            ),
+          ),
+        ),
+      ],
+    );
+  }
+
+  Widget _buildExpandedFloorSlider() {
+    final cs = Theme.of(context).colorScheme;
+    final current = _dragTargetFloor ?? _currentFloor;
+    return Padding(
+      padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 10),
+      child: Column(
+        mainAxisSize: MainAxisSize.min,
+        children: [
+          Text(
+            '$current 楼',
+            style: TextStyle(
+              fontSize: 18,
+              fontWeight: FontWeight.w700,
+              color: cs.primary,
+            ),
+          ),
+          const SizedBox(height: 4),
+          SizedBox(
+            width: 140,
+            child: SliderTheme(
+              data: SliderThemeData(
+                trackHeight: 4,
+                thumbShape: const RoundSliderThumbShape(enabledThumbRadius: 6),
+                overlayShape: const RoundSliderOverlayShape(overlayRadius: 12),
+                activeTrackColor: cs.primary,
+                inactiveTrackColor: cs.outline.withValues(alpha: 0.2),
+                thumbColor: cs.primary,
+                valueIndicatorColor: cs.primary,
+                valueIndicatorTextStyle: TextStyle(
+                  color: cs.onPrimary,
+                  fontSize: 11,
+                  fontWeight: FontWeight.w600,
+                ),
+              ),
+              child: Slider(
+                value: current.toDouble(),
+                min: 1,
+                max: _totalReplies.toDouble(),
+                divisions: _totalReplies - 1,
+                label: '$current / $_totalReplies 楼',
+                onChanged: (value) {
+                  setState(() => _dragTargetFloor = value.round());
+                  HapticFeedback.selectionClick();
+                },
+                onChangeEnd: (value) {
+                  _dragTargetFloor = value.round();
+                  _commitDragJump();
+                },
+              ),
+            ),
+          ),
+          const SizedBox(height: 4),
+          Text(
+            '$_totalReplies 楼',
+            style: TextStyle(
+              fontSize: 11,
+              color: cs.onSurfaceVariant,
+            ),
+          ),
+        ],
       ),
     );
   }
