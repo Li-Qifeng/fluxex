@@ -1,10 +1,10 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:go_router/go_router.dart';
 import 'package:liquid_glass_widgets/liquid_glass_widgets.dart';
 import 'package:url_launcher/url_launcher.dart';
 import '../providers/notifications_provider.dart';
 import '../providers/notification_provider.dart';
-import '../providers/notifications_provider.dart';
 import '../widgets/cached_avatar.dart';
 import '../widgets/notification_list_shimmer.dart';
 
@@ -43,18 +43,45 @@ class _NotificationsScreenState extends ConsumerState<NotificationsScreen> {
     }
   }
 
-  Future<void> _openAndRefresh(String href) async {
+  void _openNotification(BuildContext context, String? href) {
+    if (href == null || href.isEmpty) return;
+
+    // /t/12345 or /t/12345#reply12345
+    final topicMatch = RegExp(r'^/t/(\d+)').firstMatch(href);
+    if (topicMatch != null) {
+      final topicId = topicMatch.group(1)!;
+      context.push('/topic/$topicId');
+      _refreshUnread();
+      return;
+    }
+
+    // /member/username
+    final memberMatch = RegExp(r'^/member/(\w+)').firstMatch(href);
+    if (memberMatch != null) {
+      final username = memberMatch.group(1)!;
+      context.push('/member/$username');
+      _refreshUnread();
+      return;
+    }
+
+    // fallback: open in browser
+    _openExternal(href);
+  }
+
+  Future<void> _openExternal(String href) async {
     final uri = Uri.parse(
       href.startsWith('http') ? href : 'https://www.v2ex.com$href',
     );
-    if (await canLaunchUrl(uri)) {
-      await launchUrl(uri, mode: LaunchMode.externalApplication);
-    }
-    // 延迟 3s 刷新未读数，给用户回 App 的时间
-    await Future.delayed(const Duration(seconds: 3));
-    if (mounted) {
-      ref.read(unreadCountProvider.notifier).refresh();
-    }
+    await launchUrl(uri, mode: LaunchMode.externalApplication);
+    _refreshUnread();
+  }
+
+  void _refreshUnread() {
+    Future.delayed(const Duration(seconds: 3), () {
+      if (mounted) {
+        ref.read(unreadCountProvider.notifier).refresh();
+      }
+    });
   }
 
   @override
@@ -137,10 +164,7 @@ class _NotificationsScreenState extends ConsumerState<NotificationsScreen> {
                       )
                     : null,
                 onTap: () {
-                  final href = item.href;
-                  if (href != null) {
-                    _openAndRefresh(href);
-                  }
+                  _openNotification(context, item.href);
                 },
               );
             },

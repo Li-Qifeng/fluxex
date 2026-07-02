@@ -1,11 +1,14 @@
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
+import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 import 'package:intl/intl.dart';
 import 'package:share_plus/share_plus.dart';
 import '../models/topic.dart';
+import '../utils/app_toast.dart';
 import '../utils/db_helper.dart';
 import '../widgets/cached_avatar.dart';
+import '../providers/settings_provider.dart';
 
 class TopicCard extends StatelessWidget {
   final Topic topic;
@@ -196,6 +199,21 @@ void _showTopicMenu(BuildContext context, Topic topic) {
                 },
               ),
               ListTile(
+                leading: const Icon(Icons.bookmark_border),
+                title: const Text('稍后阅读'),
+                onTap: () async {
+                  Navigator.pop(context);
+                  final isLater = await DbHelper.isReadLater(topic.id);
+                  if (isLater) {
+                    await DbHelper.removeReadLater(topic.id);
+                    AppToast.info(context, '已移除稍后阅读');
+                  } else {
+                    await DbHelper.addReadLater(topic.id, topic.title);
+                    AppToast.success(context, '已加入稍后阅读');
+                  }
+                },
+              ),
+              ListTile(
                 leading: const Icon(Icons.share),
                 title: const Text('分享'),
                 onTap: () {
@@ -216,6 +234,36 @@ void _showTopicMenu(BuildContext context, Topic topic) {
                   );
                 },
               ),
+              ListTile(
+                leading: const Icon(Icons.visibility_off_outlined),
+                title: Text('屏蔽「${topic.title.length > 15 ? '${topic.title.substring(0, 15)}...' : topic.title}」'),
+                onTap: () async {
+                  Navigator.pop(context);
+                  final confirm = await showDialog<bool>(
+                    context: context,
+                    builder: (ctx) => AlertDialog(
+                      title: const Text('屏蔽关键词'),
+                      content: Text('将「${topic.title}」加入屏蔽列表？相关话题将不再显示。'),
+                      actions: [
+                        TextButton(
+                          onPressed: () => Navigator.pop(ctx, false),
+                          child: const Text('取消'),
+                        ),
+                        FilledButton(
+                          onPressed: () => Navigator.pop(ctx, true),
+                          child: const Text('屏蔽'),
+                        ),
+                      ],
+                    ),
+                  );
+                  if (confirm == true && context.mounted) {
+                    final notifier = ProviderScope.containerOf(context).read(settingsProvider.notifier);
+                    notifier.addBlockedKeyword(topic.title);
+                    AppToast.success(context, '已屏蔽');
+                  }
+                },
+              ),
+              const Divider(),
               ListTile(
                 leading: const Icon(Icons.person_outline),
                 title: Text('查看用户: ${topic.member.username}'),
