@@ -3,6 +3,8 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:intl/intl.dart';
 import 'package:url_launcher/url_launcher.dart';
 import '../providers/member_provider.dart';
+import '../utils/app_toast.dart';
+import '../utils/db_helper.dart';
 import '../widgets/cached_avatar.dart';
 import '../widgets/member_detail_skeleton.dart';
 import '../widgets/state_widgets.dart';
@@ -179,21 +181,57 @@ class MemberDetailScreen extends ConsumerWidget {
       shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
       child: Padding(
         padding: const EdgeInsets.all(16),
-        child: Row(
+        child: Column(
           children: [
-            Expanded(
-              child: _statItem(context, '$topicCount', '话题'),
+            Row(
+              children: [
+                Expanded(
+                  child: _statItem(context, '$topicCount', '话题'),
+                ),
+                Container(width: 1, height: 30, color: cs.outlineVariant.withValues(alpha: 0.3)),
+                Expanded(
+                  child: _statItem(context, _formatTime(member.created), '加入于'),
+                ),
+                if (member.location != null && member.location!.isNotEmpty) ...[
+                  Container(width: 1, height: 30, color: cs.outlineVariant.withValues(alpha: 0.3)),
+                  Expanded(
+                    child: _statItem(context, member.location!, '位置'),
+                  ),
+                ],
+              ],
             ),
-            Container(width: 1, height: 30, color: cs.outlineVariant.withValues(alpha: 0.3)),
-            Expanded(
-              child: _statItem(context, _formatTime(member.created), '加入于'),
+            const SizedBox(height: 12),
+            // 关注按钮
+            FutureBuilder<bool>(
+              future: DbHelper.isMemberFollowed(member.username),
+              builder: (context, snapshot) {
+                final isFollowed = snapshot.data ?? false;
+                return SizedBox(
+                  width: double.infinity,
+                  child: FilledButton.tonalIcon(
+                    onPressed: () async {
+                      if (isFollowed) {
+                        await DbHelper.unfollowMember(member.username);
+                        AppToast.info(context, '已取消关注');
+                      } else {
+                        await DbHelper.followMember(member.username);
+                        AppToast.success(context, '已关注 ${member.username}');
+                      }
+                      if (context.mounted) {
+                        ScaffoldMessenger.of(context).showSnackBar(
+                          SnackBar(
+                            content: Text(isFollowed ? '已取消关注' : '已关注 ${member.username}'),
+                            duration: const Duration(seconds: 2),
+                          ),
+                        );
+                      }
+                    },
+                    icon: Icon(isFollowed ? Icons.person_remove_outlined : Icons.person_add_outlined, size: 18),
+                    label: Text(isFollowed ? '取消关注' : '关注'),
+                  ),
+                );
+              },
             ),
-            if (member.location != null && member.location!.isNotEmpty) ...[
-              Container(width: 1, height: 30, color: cs.outlineVariant.withValues(alpha: 0.3)),
-              Expanded(
-                child: _statItem(context, member.location!, '位置'),
-              ),
-            ],
           ],
         ),
       ),

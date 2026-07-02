@@ -15,7 +15,7 @@ class DbHelper {
     final path = join(dbPath, 'fluxex.db');
     return openDatabase(
       path,
-      version: 4,
+      version: 6,
       onCreate: (db, version) async {
         await _createTables(db);
       },
@@ -55,6 +55,14 @@ class DbHelper {
               topic_id INTEGER PRIMARY KEY,
               title TEXT NOT NULL,
               added_at INTEGER NOT NULL
+            )
+          ''');
+        }
+        if (oldVersion < 6) {
+          await db.execute('''
+            CREATE TABLE IF NOT EXISTS member_follows (
+              username TEXT PRIMARY KEY,
+              followed_at INTEGER NOT NULL
             )
           ''');
         }
@@ -110,6 +118,12 @@ class DbHelper {
         topic_id INTEGER PRIMARY KEY,
         title TEXT NOT NULL,
         added_at INTEGER NOT NULL
+      )
+    ''');
+    await db.execute('''
+      CREATE TABLE member_follows (
+        username TEXT PRIMARY KEY,
+        followed_at INTEGER NOT NULL
       )
     ''');
   }
@@ -302,5 +316,34 @@ class DbHelper {
   static Future<List<Map<String, dynamic>>> getReadLater() async {
     final db = await database;
     return db.query('read_later', orderBy: 'added_at DESC');
+  }
+
+  // ========== Member Follows ==========
+  static Future<void> followMember(String username) async {
+    final db = await database;
+    await db.insert('member_follows', {
+      'username': username,
+      'followed_at': DateTime.now().millisecondsSinceEpoch,
+    }, conflictAlgorithm: ConflictAlgorithm.replace);
+  }
+
+  static Future<void> unfollowMember(String username) async {
+    final db = await database;
+    await db.delete('member_follows', where: 'username = ?', whereArgs: [username]);
+  }
+
+  static Future<bool> isMemberFollowed(String username) async {
+    final db = await database;
+    final rows = await db.query('member_follows',
+      where: 'username = ?',
+      whereArgs: [username],
+      limit: 1,
+    );
+    return rows.isNotEmpty;
+  }
+
+  static Future<List<Map<String, dynamic>>> getFollowedMembers() async {
+    final db = await database;
+    return db.query('member_follows', orderBy: 'followed_at DESC');
   }
 }
