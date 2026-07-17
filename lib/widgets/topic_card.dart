@@ -51,7 +51,8 @@ class TopicCard extends StatelessWidget {
               children: [
                 // 未读指示条
                 AnimatedContainer(
-                  duration: const Duration(milliseconds: 300),
+                  duration: const Duration(milliseconds: 200),
+                  curve: Curves.easeOut,
                   width: isRead ? 0 : 3,
                   margin: EdgeInsets.symmetric(vertical: isRead ? 0 : 10),
                   decoration: BoxDecoration(
