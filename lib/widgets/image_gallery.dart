@@ -121,18 +121,36 @@ class ImageGallery extends StatelessWidget {
                 children: [
                   PressScale(
                     onTap: () => showImageViewer(context, urls, initialIndex: index),
-                    child: ClipRRect(
-                      borderRadius: BorderRadius.circular(8),
-                      child: Image.network(
-                        url,
-                        width: 100,
-                        height: 100,
-                        fit: BoxFit.cover,
-                        errorBuilder: (_, __, ___) => Container(
+                    child: Hero(
+                      tag: 'img_$url',
+                      child: ClipRRect(
+                        borderRadius: BorderRadius.circular(8),
+                        child: Image.network(
+                          url,
                           width: 100,
                           height: 100,
-                          color: Colors.grey.shade300,
-                          child: const Icon(Icons.broken_image),
+                          fit: BoxFit.cover,
+                          loadingBuilder: (context, child, progress) {
+                            if (progress == null) return child;
+                            return Container(
+                              width: 100,
+                              height: 100,
+                              color: Colors.grey.shade200,
+                              child: const Center(
+                                child: SizedBox(
+                                  width: 20,
+                                  height: 20,
+                                  child: CircularProgressIndicator(strokeWidth: 2),
+                                ),
+                              ),
+                            );
+                          },
+                          errorBuilder: (_, __, ___) => Container(
+                            width: 100,
+                            height: 100,
+                            color: Colors.grey.shade300,
+                            child: const Icon(Icons.broken_image),
+                          ),
                         ),
                       ),
                     ),

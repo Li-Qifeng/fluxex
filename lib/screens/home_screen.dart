@@ -12,6 +12,7 @@ import '../widgets/state_widgets.dart';
 import '../widgets/topic_card.dart';
 import '../widgets/topic_card_shimmer.dart';
 import '../widgets/scroll_bottom_detector.dart';
+import '../widgets/fade_in_slide_up.dart';
 
 class HomeScreen extends ConsumerStatefulWidget {
   const HomeScreen({super.key});
@@ -171,7 +172,10 @@ class _HomeScreenState extends ConsumerState<HomeScreen>
                     mainAxisSpacing: 4,
                   ),
                   itemCount: filteredTopics.length,
-                  itemBuilder: (context, index) => TopicCard(topic: filteredTopics[index]),
+                  itemBuilder: (context, index) => FadeInSlideUp(
+                    duration: Duration(milliseconds: 200 + (index % 10) * 30),
+                    child: TopicCard(topic: filteredTopics[index]),
+                  ),
                 );
               }
               return ListView.builder(
@@ -219,7 +223,10 @@ class _HomeScreenState extends ConsumerState<HomeScreen>
                       ),
                     );
                   }
-                  return TopicCard(topic: filteredTopics[topicIndex]);
+                  return FadeInSlideUp(
+                    duration: Duration(milliseconds: 200 + (topicIndex % 10) * 30),
+                    child: TopicCard(topic: filteredTopics[topicIndex]),
+                  );
                 },
               );
             },

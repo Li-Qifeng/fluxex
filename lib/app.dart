@@ -39,19 +39,51 @@ final appRouter = GoRouter(
       routes: [
         GoRoute(
           path: '/',
-          pageBuilder: (context, state) => NoTransitionPage(child: const HomeScreen(), key: state.pageKey),
+          pageBuilder: (context, state) => CustomTransitionPage(
+            key: state.pageKey,
+            child: const HomeScreen(),
+            transitionDuration: const Duration(milliseconds: 160),
+            reverseTransitionDuration: const Duration(milliseconds: 120),
+            transitionsBuilder: (context, animation, secondaryAnimation, child) {
+              return FadeTransition(opacity: animation, child: child);
+            },
+          ),
         ),
         GoRoute(
           path: '/nodes',
-          pageBuilder: (context, state) => NoTransitionPage(child: const NodesScreen(), key: state.pageKey),
+          pageBuilder: (context, state) => CustomTransitionPage(
+            key: state.pageKey,
+            child: const NodesScreen(),
+            transitionDuration: const Duration(milliseconds: 160),
+            reverseTransitionDuration: const Duration(milliseconds: 120),
+            transitionsBuilder: (context, animation, secondaryAnimation, child) {
+              return FadeTransition(opacity: animation, child: child);
+            },
+          ),
         ),
         GoRoute(
           path: '/search',
-          pageBuilder: (context, state) => NoTransitionPage(child: const SearchScreen(), key: state.pageKey),
+          pageBuilder: (context, state) => CustomTransitionPage(
+            key: state.pageKey,
+            child: const SearchScreen(),
+            transitionDuration: const Duration(milliseconds: 160),
+            reverseTransitionDuration: const Duration(milliseconds: 120),
+            transitionsBuilder: (context, animation, secondaryAnimation, child) {
+              return FadeTransition(opacity: animation, child: child);
+            },
+          ),
         ),
         GoRoute(
           path: '/profile',
-          pageBuilder: (context, state) => NoTransitionPage(child: const ProfileScreen(), key: state.pageKey),
+          pageBuilder: (context, state) => CustomTransitionPage(
+            key: state.pageKey,
+            child: const ProfileScreen(),
+            transitionDuration: const Duration(milliseconds: 160),
+            reverseTransitionDuration: const Duration(milliseconds: 120),
+            transitionsBuilder: (context, animation, secondaryAnimation, child) {
+              return FadeTransition(opacity: animation, child: child);
+            },
+          ),
         ),
       ],
     ),

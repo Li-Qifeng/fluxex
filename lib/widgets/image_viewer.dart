@@ -206,15 +206,17 @@ class _ImageViewerPageState extends State<_ImageViewerPage> with SingleTickerPro
   }
 
   Widget _buildImage(String url, int index) {
-    return InteractiveViewer(
-      transformationController: _getController(index),
-      panEnabled: true,
-      boundaryMargin: const EdgeInsets.all(20),
-      minScale: 0.8,
-      maxScale: 4.0,
-      child: Image.network(
-        url,
-        fit: BoxFit.contain,
+    return Hero(
+      tag: 'img_$url',
+      child: InteractiveViewer(
+        transformationController: _getController(index),
+        panEnabled: true,
+        boundaryMargin: const EdgeInsets.all(20),
+        minScale: 0.8,
+        maxScale: 4.0,
+        child: Image.network(
+          url,
+          fit: BoxFit.contain,
         loadingBuilder: (context, child, loadingProgress) {
           if (loadingProgress == null) return child;
           return Center(
@@ -240,10 +242,11 @@ class _ImageViewerPageState extends State<_ImageViewerPage> with SingleTickerPro
           ],
         ),
       ),
-    );
-  }
+    ),
+  );
+}
 
-  @override
+@override
   Widget build(BuildContext context) {
     return Scaffold(
       backgroundColor: Colors.black.withValues(alpha: _backgroundOpacity),
