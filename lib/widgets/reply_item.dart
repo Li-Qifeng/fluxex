@@ -9,6 +9,7 @@ import '../utils/link_actions.dart';
 import '../utils/time_util.dart';
 import '../widgets/cached_avatar.dart';
 import '../widgets/collapsible_content.dart';
+import '../widgets/press_scale.dart';
 
 class ReplyItem extends StatelessWidget {
   final Reply reply;
@@ -74,7 +75,7 @@ class ReplyItem extends StatelessWidget {
           // 头部：用户名 + 时间 + 楼层
           Row(
             children: [
-              GestureDetector(
+              PressScale(
                 onTap: () => context.push('/member/${reply.member.username}'),
                 child: CachedAvatar(
                   imageUrl: reply.member.avatarNormal,
@@ -87,7 +88,7 @@ class ReplyItem extends StatelessWidget {
                 child: Column(
                   crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
-                    GestureDetector(
+                    PressScale(
                       onTap: () => context.push('/member/${reply.member.username}'),
                       child: Text(
                         reply.member.username,

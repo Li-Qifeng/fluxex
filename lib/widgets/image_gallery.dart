@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'image_viewer.dart';
+import 'press_scale.dart';
 import '../utils/image_utils.dart';
 
 class ImageGallery extends StatelessWidget {
@@ -118,7 +119,7 @@ class ImageGallery extends StatelessWidget {
               height: 100,
               child: Stack(
                 children: [
-                  GestureDetector(
+                  PressScale(
                     onTap: () => showImageViewer(context, urls, initialIndex: index),
                     child: ClipRRect(
                       borderRadius: BorderRadius.circular(8),

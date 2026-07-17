@@ -8,6 +8,7 @@ import '../models/topic.dart';
 import '../utils/app_toast.dart';
 import '../utils/db_helper.dart';
 import '../widgets/cached_avatar.dart';
+import '../widgets/press_scale.dart';
 import '../providers/settings_provider.dart';
 
 class TopicCard extends StatelessWidget {
@@ -66,7 +67,7 @@ class TopicCard extends StatelessWidget {
                 children: [
                   Row(
                     children: [
-                      GestureDetector(
+                      PressScale(
                         onTap: () => context.push('/node/${topic.node.name}'),
                         child: Container(
                           padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 3),
@@ -97,7 +98,7 @@ class TopicCard extends StatelessWidget {
                       ),
                       const SizedBox(width: 6),
                       Expanded(
-                        child: GestureDetector(
+                        child: PressScale(
                           onTap: () => context.push('/member/${topic.member.username}'),
                           child: Text(
                             topic.member.username,
