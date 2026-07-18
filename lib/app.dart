@@ -361,6 +361,11 @@ class ScaffoldWithNavBar extends ConsumerWidget {
         ),
         selectedIconColor: Colors.white,
         unselectedIconColor: unselectedColor,
+        textStyle: TextStyle(
+          color: unselectedColor.withValues(alpha: 0.85),
+          fontSize: 11,
+          fontWeight: FontWeight.w500,
+        ),
         iconSize: 22,
         labelFontSize: 11,
         glowOpacity: 0.35,
