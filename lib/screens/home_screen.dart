@@ -24,6 +24,7 @@ class HomeScreen extends ConsumerStatefulWidget {
 class _HomeScreenState extends ConsumerState<HomeScreen>
     with WidgetsBindingObserver {
   bool _clipboardChecked = false;
+  DateTime _lastResumeTime = DateTime.now();
 
   @override
   void initState() {
@@ -41,8 +42,14 @@ class _HomeScreenState extends ConsumerState<HomeScreen>
   @override
   void didChangeAppLifecycleState(AppLifecycleState state) {
     if (state == AppLifecycleState.resumed) {
-      _clipboardChecked = false;
-      _checkClipboard();
+      // 应用从后台返回时，距离上次检查超过 30s 才再检查剪贴板
+      // 避免频繁触发系统剪贴板权限弹窗
+      final now = DateTime.now();
+      if (now.difference(_lastResumeTime).inSeconds > 30) {
+        _lastResumeTime = now;
+        _clipboardChecked = false;
+        _checkClipboard();
+      }
     }
   }
 
@@ -161,7 +168,7 @@ class _HomeScreenState extends ConsumerState<HomeScreen>
                 return GridView.builder(
                   physics: const AlwaysScrollableScrollPhysics(),
                   padding: EdgeInsets.only(
-                    top: MediaQuery.paddingOf(context).top + kToolbarHeight + 48,
+                    top: MediaQuery.paddingOf(context).top + kToolbarHeight + 56,
                     left: 8,
                     right: 8,
                   ),
@@ -190,8 +197,8 @@ class _HomeScreenState extends ConsumerState<HomeScreen>
                   if (index == 0) {
                     return SizedBox(
                       height: MediaQuery.paddingOf(context).top +
-                          kToolbarHeight +
-                          48,
+                        kToolbarHeight +
+                        56,
                     );
                   }
                   var contentIndex = index - 1;
@@ -283,7 +290,7 @@ class _HomeScreenState extends ConsumerState<HomeScreen>
               ),
           ],
           bottom: PreferredSize(
-            preferredSize: const Size.fromHeight(48),
+            preferredSize: const Size.fromHeight(56),
             child: Padding(
               padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
               child: SegmentedButton<TopicTab>(
