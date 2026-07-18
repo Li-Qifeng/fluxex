@@ -335,7 +335,7 @@ class ScaffoldWithNavBar extends ConsumerWidget {
         indicatorExpansion: 8,
         magnification: 1.05,
         innerBlur: 0.6,
-        maskingQuality: MaskingQuality.off,
+        maskingQuality: MaskingQuality.high,
         interactionBehavior: GlassInteractionBehavior.full,
         pressScale: 1.03,
         settings: LiquidGlassSettings(

@@ -180,12 +180,22 @@ class _HomeScreenState extends ConsumerState<HomeScreen>
               }
               return ListView.builder(
                 physics: const AlwaysScrollableScrollPhysics(),
-                padding: EdgeInsets.only(
-                  top: MediaQuery.paddingOf(context).top + kToolbarHeight + 48,
-                ),
-                itemCount: filteredTopics.length + (result.fromCache ? 1 : 0) + 1,
+                padding: const EdgeInsets.only(bottom: 16),
+                itemCount: 1 /* top spacer */
+                    + (result.fromCache ? 1 : 0)
+                    + filteredTopics.length
+                    + 1 /* loading indicator */,
                 itemBuilder: (context, index) {
-                  if (result.fromCache && index == 0) {
+                  // 顶部占位 — 代替 ListView.padding.top，让离线提示在它之后
+                  if (index == 0) {
+                    return SizedBox(
+                      height: MediaQuery.paddingOf(context).top +
+                          kToolbarHeight +
+                          48,
+                    );
+                  }
+                  var contentIndex = index - 1;
+                  if (result.fromCache && contentIndex == 0) {
                     return Container(
                       margin: const EdgeInsets.all(12),
                       padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 10),
@@ -211,7 +221,8 @@ class _HomeScreenState extends ConsumerState<HomeScreen>
                       ),
                     );
                   }
-                  final topicIndex = result.fromCache ? index - 1 : index;
+                  // 跳过顶部占位(+1) 和可选的离线提示(+0/1)
+                  final topicIndex = result.fromCache ? index - 2 : index - 1;
                   if (topicIndex == filteredTopics.length) {
                     return const Padding(
                       padding: EdgeInsets.symmetric(vertical: 24),
