@@ -706,7 +706,7 @@ class _TopicDetailScreenState extends ConsumerState<TopicDetailScreen> {
               },
             ),
         ],
-        flexibleSpace: const GradientAppBarBlur(maxBlur: 32, tintAlpha: 0.55),
+        flexibleSpace: const GradientAppBarBlur(maxBlur: 20, tintAlpha: 0.50),
       ),
       body: topicAsync.when(
         data: (topic) {

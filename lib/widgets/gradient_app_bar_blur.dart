@@ -9,7 +9,7 @@ class GradientAppBarBlur extends StatelessWidget {
 
   const GradientAppBarBlur({
     super.key,
-    this.maxBlur = 48,
+    this.maxBlur = 24,
     this.tintAlpha = 0.72,
   });
 

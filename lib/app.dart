@@ -301,14 +301,15 @@ class ScaffoldWithNavBar extends ConsumerWidget {
     if (location.startsWith('/profile')) currentIndex = 3;
 
     final isDark = Theme.of(context).brightness == Brightness.dark;
-    // 浅色模式：玻璃层底色更暗、更不透明，确保按钮可见
-    // 深色模式：玻璃层底色稍亮，保持玻璃质感
+    // Apple Design: 玻璃材质应足够厚重以建立层次感，文字必须在玻璃上清晰可辨
+    // 浅色：玻璃底色加深(0.55)，模糊增强至16，确保白字/灰文字高对比
+    // 深色：玻璃底色提亮(0.30)，避免透明度过高导致文字淹没
     final glassColor = isDark
-        ? const Color.from(alpha: 0.18, red: 1, green: 1, blue: 1)
-        : const Color.from(alpha: 0.35, red: 0.95, green: 0.95, blue: 0.95);
+        ? const Color.from(alpha: 0.30, red: 1, green: 1, blue: 1)
+        : const Color.from(alpha: 0.55, red: 0.92, green: 0.92, blue: 0.92);
     final unselectedColor = isDark
-        ? const Color.from(alpha: 0.55, red: 1, green: 1, blue: 1)
-        : const Color.from(alpha: 0.65, red: 0.2, green: 0.2, blue: 0.2);
+        ? const Color.from(alpha: 0.72, red: 1, green: 1, blue: 1)
+        : const Color.from(alpha: 0.80, red: 0.15, green: 0.15, blue: 0.15);
 
     return Scaffold(
       extendBody: true,
@@ -329,42 +330,42 @@ class ScaffoldWithNavBar extends ConsumerWidget {
         horizontalPadding: 20,
         verticalPadding: 12,
         enableBlend: true,
-        blendAmount: 12,
+        blendAmount: 6,
         showIndicator: true,
-        indicatorExpansion: 10,
-        magnification: 1.1,
-        innerBlur: 1.2,
-        maskingQuality: MaskingQuality.high,
+        indicatorExpansion: 8,
+        magnification: 1.05,
+        innerBlur: 0.6,
+        maskingQuality: MaskingQuality.off,
         interactionBehavior: GlassInteractionBehavior.full,
         pressScale: 1.03,
         settings: LiquidGlassSettings(
-          thickness: 32,
-          blur: 8,
-          refractiveIndex: 1.59,
-          chromaticAberration: 0.22,
-          lightIntensity: 0.75,
-          saturation: 0.8,
-          ambientStrength: 0.8,
+          thickness: 28,
+          blur: 12,
+          refractiveIndex: 1.45,
+          chromaticAberration: 0.10,
+          lightIntensity: 0.55,
+          saturation: 0.6,
+          ambientStrength: 0.5,
           lightAngle: 2.356,
           glassColor: glassColor,
         ),
         indicatorSettings: const LiquidGlassSettings(
-          glassColor: Color.from(alpha: 0.25, red: 1, green: 1, blue: 1),
-          saturation: 1.4,
-          refractiveIndex: 1.25,
-          thickness: 22,
-          lightIntensity: 1.8,
-          chromaticAberration: 0.35,
-          blur: 1,
+          glassColor: Color.from(alpha: 0.35, red: 1, green: 1, blue: 1),
+          saturation: 1.2,
+          refractiveIndex: 1.15,
+          thickness: 18,
+          lightIntensity: 1.2,
+          chromaticAberration: 0.15,
+          blur: 0.5,
           lightAngle: 2.356,
         ),
         selectedIconColor: Colors.white,
         unselectedIconColor: unselectedColor,
         iconSize: 22,
         labelFontSize: 11,
-        glowOpacity: 0.55,
-        glowBlurRadius: 28,
-        glowSpreadRadius: 6,
+        glowOpacity: 0.35,
+        glowBlurRadius: 18,
+        glowSpreadRadius: 3,
         tabs: const [
           GlassBottomBarTab(
             label: '首页',
